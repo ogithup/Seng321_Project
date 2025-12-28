@@ -1,0 +1,437 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Writing Analysis - AAFS AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analysis-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* Dual Pane Layout */
+    .analysis-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    /* Left Pane: Text Input */
+    .input-pane {
+        padding: 32px;
+    }
+
+    .pane-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 20px;
+    }
+
+    .text-input-area {
+        width: 100%;
+        min-height: 400px;
+        padding: 20px;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        background: var(--card-bg);
+        color: var(--text-main);
+        font-size: 1rem;
+        line-height: 1.7;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        resize: vertical;
+        transition: all 0.2s ease;
+    }
+
+    .text-input-area:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .word-counter {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 12px;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+
+    .word-count {
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .btn-analyze {
+        width: 100%;
+        padding: 14px 24px;
+        background: var(--accent);
+        color: var(--white);
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-top: 20px;
+    }
+
+    .btn-analyze:hover {
+        background: var(--accent-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-analyze:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* File Upload Alternative */
+    .upload-section {
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .upload-zone {
+        border: 2px dashed var(--border-color);
+        border-radius: 16px;
+        padding: 32px;
+        text-align: center;
+        cursor: pointer;
+        background: var(--card-bg);
+        transition: all 0.3s ease;
+    }
+
+    .upload-zone:hover {
+        border-color: var(--accent);
+        background: var(--hover-bg);
+    }
+
+    .upload-icon {
+        font-size: 2.5rem;
+        margin-bottom: 12px;
+        opacity: 0.6;
+    }
+
+    .upload-text {
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 6px;
+    }
+
+    .upload-hint {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+
+    /* Right Pane: Results */
+    .results-pane {
+        padding: 32px;
+    }
+
+    .results-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .tab-button {
+        padding: 12px 20px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-bottom: -1px;
+    }
+
+    .tab-button:hover {
+        color: var(--text-main);
+    }
+
+    .tab-button.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .result-card {
+        padding: 24px;
+        margin-bottom: 16px;
+        border-radius: 16px;
+    }
+
+    .result-card-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 12px;
+    }
+
+    .result-content {
+        color: var(--text-secondary);
+        line-height: 1.7;
+    }
+
+    .score-display {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .score-value {
+        font-size: 3rem;
+        font-weight: 800;
+        color: var(--accent);
+    }
+
+    .score-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+
+    .suggestion-item {
+        padding: 16px;
+        background: var(--hover-bg);
+        border-radius: 12px;
+        margin-bottom: 12px;
+    }
+
+    .suggestion-text {
+        color: var(--text-main);
+        line-height: 1.6;
+        margin-bottom: 8px;
+    }
+
+    .suggestion-type {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .empty-results {
+        padding: 60px 40px;
+        text-align: center;
+    }
+
+    .empty-results-icon {
+        font-size: 4rem;
+        margin-bottom: 16px;
+        opacity: 0.4;
+    }
+
+    .empty-results-text {
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    @media (max-width: 1024px) {
+        .analysis-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analysis-container">
+    <div class="analysis-grid">
+        <!-- Left Pane: Text Input -->
+        <div class="input-pane glass-card">
+            <h2 class="pane-title">Enter Your Text</h2>
+            <textarea id="textInput" class="text-input-area" placeholder="Paste or type your text here for AI analysis..."></textarea>
+            <div class="word-counter">
+                <span>Word count:</span>
+                <span class="word-count" id="wordCount">0</span>
+            </div>
+            <button class="btn-analyze" id="analyzeBtn" onclick="analyzeText()">Analyze with AI ✨</button>
+
+            <div class="upload-section">
+                <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">Or Upload Document</div>
+                    <div class="upload-hint">Supports .docx, .txt • Max 5MB</div>
+                    <input type="file" id="fileInput" accept=".docx,.txt" style="display: none;" onchange="handleFileUpload(event)">
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Pane: Results -->
+        <div class="results-pane glass-card">
+            <h2 class="pane-title">Analysis Results</h2>
+            
+            {% if analysis_results or grade %}
+            <!-- Results Tabs -->
+            <div class="results-tabs">
+                <button class="tab-button active" onclick="switchTab('overview')">Overview</button>
+                <button class="tab-button" onclick="switchTab('grammar')">Grammar</button>
+                <button class="tab-button" onclick="switchTab('vocabulary')">Vocabulary</button>
+                <button class="tab-button" onclick="switchTab('suggestions')">Suggestions</button>
+            </div>
+
+            <!-- Overview Tab -->
+            <div id="overviewTab" class="tab-content active">
+                {% if grade %}
+                <div class="result-card" style="background: var(--hover-bg);">
+                    <div class="score-display">
+                        <div class="score-value">{{ grade.score | round(1) }}</div>
+                        <div class="score-label">Overall Score</div>
+                    </div>
+                </div>
+                {% endif %}
+                {% if grade and grade.general_feedback %}
+                <div class="result-card">
+                    <div class="result-card-title">General Feedback</div>
+                    <div class="result-content">{{ grade.general_feedback }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Grammar Tab -->
+            <div id="grammarTab" class="tab-content">
+                {% if grade and grade.grammar_feedback %}
+                <div class="result-card">
+                    <div class="result-card-title">Grammar Analysis</div>
+                    <div class="result-content">{{ grade.grammar_feedback }}</div>
+                </div>
+                {% else %}
+                <div class="empty-results">
+                    <div class="empty-results-icon">📝</div>
+                    <div class="empty-results-text">No grammar feedback available yet.</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Vocabulary Tab -->
+            <div id="vocabularyTab" class="tab-content">
+                {% if grade and grade.vocabulary_feedback %}
+                <div class="result-card">
+                    <div class="result-card-title">Vocabulary Analysis</div>
+                    <div class="result-content">{{ grade.vocabulary_feedback }}</div>
+                </div>
+                {% else %}
+                <div class="empty-results">
+                    <div class="empty-results-icon">📚</div>
+                    <div class="empty-results-text">No vocabulary feedback available yet.</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Suggestions Tab -->
+            <div id="suggestionsTab" class="tab-content">
+                {% if grade and grade.suggestions %}
+                {% for suggestion in grade.suggestions %}
+                <div class="suggestion-item">
+                    <div class="suggestion-type">{{ suggestion.type }}</div>
+                    <div class="suggestion-text">{{ suggestion.text }}</div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-results">
+                    <div class="empty-results-icon">💡</div>
+                    <div class="empty-results-text">No suggestions available yet.</div>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="empty-results">
+                <div class="empty-results-icon">✨</div>
+                <div class="empty-results-text">
+                    Enter your text and click "Analyze with AI" to see detailed feedback on grammar, vocabulary, and writing suggestions.
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Word Counter
+    const textInput = document.getElementById('textInput');
+    const wordCount = document.getElementById('wordCount');
+
+    if (textInput && wordCount) {
+        textInput.addEventListener('input', function() {
+            const text = this.value.trim();
+            const words = text ? text.split(/\s+/).filter(word => word.length > 0).length : 0;
+            wordCount.textContent = words;
+        });
+    }
+
+    // Tab Switching
+    function switchTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Show selected tab
+        document.getElementById(tabName + 'Tab').classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // Analyze Text
+    function analyzeText() {
+        const text = textInput.value.trim();
+        if (!text) {
+            alert('Please enter some text to analyze.');
+            return;
+        }
+
+        // Submit form
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/submit/writing';
+        
+        const textField = document.createElement('input');
+        textField.type = 'hidden';
+        textField.name = 'text_content';
+        textField.value = text;
+        
+        form.appendChild(textField);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // Handle File Upload
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/submit/writing';
+            form.enctype = 'multipart/form-data';
+            
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.name = 'file';
+            fileInput.files = event.target.files;
+            
+            form.appendChild(fileInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>
+{% endblock %}

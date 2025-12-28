@@ -1,0 +1,21 @@
+# Python önbelleði
+__pycache__/
+*.py[cod]
+
+# Sanal ortam
+venv/
+
+# Veritabaný (Görselde 'site' olarak görünüyor)
+site
+site.db
+
+# Ortam deðiþkenleri (Hassas bilgiler)
+.env
+
+# IDE Dosyalarý (Visual Studio ve VS Code)
+.vs/
+.vscode/
+
+# Yüklenen dosyalar
+static/uploads/*
+!static/uploads/.gitkeep

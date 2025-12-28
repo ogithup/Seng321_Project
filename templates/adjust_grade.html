@@ -1,0 +1,119 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Adjust Grade - AAFS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .content-container {
+        display: flex;
+        justify-content: center;
+        padding: 20px 0;
+    }
+
+    .adjust-card {
+        padding: 30px;
+        width: 100%;
+        max-width: 600px;
+    }
+
+    h2 {
+        text-align: center;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        margin-top: 15px;
+        font-weight: 700;
+        color: var(--text-main);
+        font-size: 0.9rem;
+    }
+
+    .ai-score {
+        font-size: 1.5rem;
+        color: var(--primary);
+        font-weight: 800;
+        text-align: center;
+        padding: 15px;
+        border: 2px solid var(--primary);
+        border-radius: var(--radius-md);
+        margin-bottom: 20px;
+        background: #eef2ff;
+    }
+
+    .student-info {
+        background: #f8fafc;
+        padding: 15px;
+        border-radius: var(--radius-md);
+        margin-bottom: 20px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .submission-content {
+        border: 1px solid #e2e8f0;
+        padding: 15px;
+        margin-top: 10px;
+        background: var(--card-bg);
+        max-height: 200px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        font-family: 'Courier New', monospace;
+        border-radius: var(--radius-md);
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .back-link {
+        display: block;
+        text-align: center;
+        margin-top: 20px;
+        text-decoration: none;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    .back-link:hover {
+        color: var(--primary);
+    }
+</style>
+{% endblock %}
+
+{% block header %}
+<h2>Adjust Grade</h2>
+{% endblock %}
+
+{% block content %}
+<div class="content-container">
+    <div class="adjust-card glass-card">
+        <h2>✏️ Adjust AI Grade</h2>
+
+        <div class="student-info">
+            Submission by: <b>{{ submission.student.username }}</b> ({{ submission.student.email }})<br>
+            Submitted on: {{ submission.created_at.strftime('%Y-%m-%d %H:%M') }}
+        </div>
+
+        <div class="ai-score">
+            AI Assigned Score: {{ submission.grade.score | round(1) }}/100
+        </div>
+
+        <h3>Original Content:</h3>
+        <div class="submission-content">
+            {{ submission.text_content }}
+        </div>
+
+        <form action="/adjust_grade/{{ submission.id }}" method="POST">
+            <label for="new_score">New Score (0-100):</label>
+            <input type="number" id="new_score" name="new_score" value="{{ submission.grade.score | round(0) }}" min="0" max="100" step="0.1" required>
+
+            <label for="new_feedback">Adjust General Feedback:</label>
+            <textarea id="new_feedback" name="new_feedback">{{ submission.grade.general_feedback }}</textarea>
+
+            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 20px;">💾 Save Adjusted Grade</button>
+        </form>
+
+        <a href="/instructor/dashboard" class="back-link">← Back to Instructor Dashboard</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,523 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Speaking Analysis - AAFS AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Top Metrics Bar */
+    .metrics-bar {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .metric-mini {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid var(--border-color);
+        text-align: center;
+    }
+
+    .metric-mini-label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 6px;
+    }
+
+    .metric-mini-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    /* Main Layout: Left-Right */
+    .speaking-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    /* Left: Recording Card */
+    .recording-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 32px;
+        border: 1px solid var(--border-color);
+        text-align: center;
+    }
+
+    .record-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin: 0 0 8px 0;
+    }
+
+    .record-description {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        margin: 0 0 24px 0;
+        line-height: 1.5;
+    }
+
+    .record-btn {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: #6366f1;
+        color: #ffffff;
+        border: none;
+        cursor: pointer;
+        margin: 0 auto 16px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .record-btn:hover {
+        transform: scale(1.05);
+    }
+
+    .record-btn.recording {
+        background: #ef4444;
+        animation: indigo-pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes indigo-pulse {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+        }
+        50% {
+            box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+        }
+    }
+
+    .record-btn svg {
+        width: 40px;
+        height: 40px;
+        stroke-width: 2;
+    }
+
+    .record-label {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: var(--accent);
+        margin: 0 0 24px 0;
+    }
+
+    .divider {
+        height: 1px;
+        background: var(--border-color);
+        margin: 24px 0;
+    }
+
+    /* Upload Zone */
+    .upload-zone {
+        border: 1px dashed var(--border-color);
+        border-radius: 12px;
+        padding: 24px;
+        cursor: pointer;
+        background: var(--bg-primary);
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+
+    .upload-zone:hover {
+        border-color: var(--accent);
+        background: var(--hover-bg);
+    }
+
+    .upload-icon {
+        width: 20px;
+        height: 20px;
+        margin: 0 auto 8px;
+        color: var(--text-secondary);
+        opacity: 0.6;
+    }
+
+    .upload-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke-width: 2;
+    }
+
+    .upload-text {
+        font-weight: 600;
+        font-size: 0.8125rem;
+        color: var(--text-main);
+        margin-bottom: 4px;
+    }
+
+    .upload-hint {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    /* Right: Results Area */
+    .results-area {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 32px;
+        border: 1px solid var(--border-color);
+    }
+
+    .results-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .metric-card {
+        background: var(--bg-primary);
+        border-radius: 8px;
+        padding: 16px;
+        border: 1px solid var(--border-color);
+    }
+
+    .metric-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .metric-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .metric-title svg {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2;
+        color: var(--accent);
+    }
+
+    .metric-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--accent);
+    }
+
+    .metric-description {
+        font-size: 0.6875rem;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        line-height: 1.4;
+    }
+
+    .progress-bar {
+        height: 4px;
+        background: var(--hover-bg);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 4px;
+        transition: width 0.6s ease;
+    }
+
+    .tips-card,
+    .feedback-card {
+        background: var(--bg-primary);
+        border-radius: 8px;
+        padding: 16px;
+        border: 1px solid var(--border-color);
+        margin-top: 16px;
+    }
+
+    .tips-title,
+    .feedback-title {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .tips-title svg,
+    .feedback-title svg {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2;
+        color: var(--accent);
+    }
+
+    .tips-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .tips-list li {
+        padding: 6px 0;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        line-height: 1.5;
+    }
+
+    .tips-list li:last-child {
+        border-bottom: none;
+    }
+
+    .feedback-text {
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        line-height: 1.5;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+    }
+
+    .empty-state-icon {
+        width: 20px;
+        height: 20px;
+        margin: 0 auto 12px;
+        opacity: 0.4;
+        color: var(--text-secondary);
+    }
+
+    .empty-state-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke-width: 2;
+    }
+
+    .empty-state-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 4px;
+    }
+
+    .empty-state-text {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    /* Responsive */
+    @media (max-width: 968px) {
+        .speaking-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .results-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Bar -->
+<div class="metrics-bar">
+    <div class="metric-mini">
+        <div class="metric-mini-label">Avg Score</div>
+        <div class="metric-mini-value">{{ avg_score if avg_score else '--' }}%</div>
+    </div>
+    <div class="metric-mini">
+        <div class="metric-mini-label">Last Practice</div>
+        <div class="metric-mini-value">{{ last_practice if last_practice else 'Never' }}</div>
+    </div>
+    <div class="metric-mini">
+        <div class="metric-mini-label">Total Recordings</div>
+        <div class="metric-mini-value">{{ total_recordings if total_recordings else 0 }}</div>
+    </div>
+</div>
+
+<!-- Main Layout: Left-Right -->
+<div class="speaking-layout">
+    <!-- Left: Recording Card -->
+    <div class="recording-card">
+        <h2 class="record-title">Start Recording</h2>
+        <p class="record-description">Click the microphone to start your AI-powered speaking practice.</p>
+
+        <button class="record-btn" id="recordBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+        </button>
+        <p class="record-label" id="recordLabel">Tap to Start Recording</p>
+
+        <div class="divider"></div>
+
+        <h3 style="font-size: 0.875rem; font-weight: 600; color: var(--text-main); margin: 0 0 12px 0;">Or Upload Audio</h3>
+        <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+            </div>
+            <div class="upload-text">Drag & Drop Audio File</div>
+            <div class="upload-hint">MP3, WAV • Max 10MB</div>
+            <input type="file" accept="audio/*" style="display: none;" id="audioInput">
+        </div>
+    </div>
+
+    <!-- Right: Results Area (Hidden if no data) -->
+    <div class="results-area">
+        {% if analysis_results and (analysis_results.pronunciation_score is defined or analysis_results.fluency_score is defined) %}
+        <div class="results-grid">
+            {% if analysis_results.pronunciation_score is defined %}
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                        Pronunciation
+                    </div>
+                    <div class="metric-value">{{ analysis_results.pronunciation_score }}%</div>
+                </div>
+                <p class="metric-description">Accuracy of word articulation.</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ analysis_results.pronunciation_score }}%;"></div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if analysis_results.fluency_score is defined %}
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                        Fluency
+                    </div>
+                    <div class="metric-value">{{ analysis_results.fluency_score }}%</div>
+                </div>
+                <p class="metric-description">Speech pace and rhythm.</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ analysis_results.fluency_score }}%;"></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if analysis_results.tips %}
+        <div class="tips-card">
+            <div class="tips-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                AI Speaking Tips
+            </div>
+            <ul class="tips-list">
+                {% for tip in analysis_results.tips %}
+                <li>{{ tip }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if analysis_results.feedback %}
+        <div class="feedback-card">
+            <div class="feedback-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                Detailed Feedback
+            </div>
+            <p class="feedback-text">{{ analysis_results.feedback }}</p>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+            </div>
+            <div class="empty-state-title">Ready to Analyze</div>
+            <div class="empty-state-text">Record your speech or upload an audio file to get AI-powered feedback.</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    const recordBtn = document.getElementById('recordBtn');
+    const recordLabel = document.getElementById('recordLabel');
+    let isRecording = false;
+
+    if (recordBtn) {
+        recordBtn.addEventListener('click', function() {
+            isRecording = !isRecording;
+            if (isRecording) {
+                recordBtn.classList.add('recording');
+                recordLabel.textContent = 'Recording... Tap to Stop';
+            } else {
+                recordBtn.classList.remove('recording');
+                recordLabel.textContent = 'Tap to Start Recording';
+            }
+        });
+    }
+
+    const uploadZone = document.getElementById('uploadZone');
+    const audioInput = document.getElementById('audioInput');
+
+    if (uploadZone && audioInput) {
+        uploadZone.addEventListener('click', () => audioInput.click());
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = 'var(--accent)';
+            uploadZone.style.background = 'rgba(99, 102, 241, 0.05)';
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.style.borderColor = 'var(--border-color)';
+            uploadZone.style.background = 'var(--bg-primary)';
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = 'var(--border-color)';
+            uploadZone.style.background = 'var(--bg-primary)';
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                audioInput.files = files;
+            }
+        });
+    }
+</script>
+{% endblock %}

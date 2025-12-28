@@ -1,0 +1,864 @@
+{% extends "base.html" %}
+
+{% block title %}History - AAFS AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Page Background - Dynamic based on theme */
+    body {
+        background-color: var(--bg-primary);
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    [data-theme="dark"] body {
+        background-color: #0f172a; /* slate-900 */
+    }
+
+    /* Container - Fixed Height */
+    .history-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 120px 32px 20px 32px;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        position: relative;
+    }
+
+    /* Modern Pill Tabs Filter Bar - Centered in Main Area */
+    .filter-bar {
+        position: fixed;
+        top: 80px;
+        left: calc(50vw + var(--sidebar-width) / 2);
+        transform: translateX(-50%);
+        display: flex;
+        gap: 6px;
+        padding: 8px;
+        background: var(--card-bg);
+        border-radius: 50px;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border-color);
+        z-index: 100;
+        backdrop-filter: blur(10px);
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    body.sidebar-collapsed .filter-bar {
+        left: calc(50vw + var(--sidebar-collapsed-width) / 2);
+        transform: translateX(-50%);
+    }
+
+    [data-theme="dark"] .filter-bar {
+        box-shadow: var(--shadow-lg);
+        background: var(--card-bg);
+    }
+
+    .filter-pill {
+        padding: 10px 20px;
+        border-radius: 50px;
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        position: relative;
+    }
+
+    [data-theme="dark"] .filter-pill:not(.active) {
+        color: var(--text-secondary-dark);
+    }
+
+    .filter-pill:hover:not(.active) {
+        color: var(--accent);
+        background: rgba(99, 102, 241, 0.08);
+    }
+
+    .filter-pill.active {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: var(--white);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    /* Scrollable Container - Fixed Height */
+    .bento-grid-container {
+        width: 100%;
+        max-width: 1400px;
+        height: calc(100vh - 180px);
+        overflow-y: auto;
+        overflow-x: hidden;
+        margin-top: 100px;
+        padding-right: 4px;
+    }
+
+    /* Scrollbar'ı gizle ama kaydırma özelliğini koru */
+    .bento-grid-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .bento-grid-container {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+    }
+
+    /* Bento Grid Layout - Compact with 7-8 Columns */
+    .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 16px;
+        width: 100%;
+        padding-bottom: 20px;
+    }
+
+    @media (min-width: 2000px) {
+        .bento-grid {
+            grid-template-columns: repeat(8, 1fr);
+        }
+    }
+
+    @media (min-width: 1800px) and (max-width: 1999px) {
+        .bento-grid {
+            grid-template-columns: repeat(7, 1fr);
+        }
+    }
+
+    @media (min-width: 1600px) and (max-width: 1799px) {
+        .bento-grid {
+            grid-template-columns: repeat(6, 1fr);
+        }
+    }
+
+    @media (min-width: 1400px) and (max-width: 1599px) {
+        .bento-grid {
+            grid-template-columns: repeat(5, 1fr);
+        }
+    }
+
+    @media (min-width: 1200px) and (max-width: 1399px) {
+        .bento-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    /* Activity Tile - Bento Style - Ultra Compact */
+    .activity-tile {
+        background: var(--card-bg);
+        border-radius: 16px; /* rounded-xl */
+        padding: 0;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        min-height: 200px;
+    }
+
+    .activity-tile:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--accent);
+    }
+
+    /* Visual Area with Frame - Compact with Aspect Ratio */
+    .tile-visual {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        max-height: 110px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+        border-bottom: 1px solid var(--border-color);
+        transition: transform 0.3s ease;
+    }
+
+    .activity-tile:hover .tile-visual {
+        transform: scale(1.05);
+    }
+
+    .tile-visual.has-thumbnail {
+        background: transparent;
+        border: 1px solid var(--border-color);
+        margin: 8px;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .tile-thumbnail {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        aspect-ratio: 16 / 9;
+        transition: transform 0.3s ease;
+    }
+
+    .activity-tile:hover .tile-thumbnail {
+        transform: scale(1.05);
+    }
+
+    /* Category Icon - Corner Badge - Compact */
+    .tile-category-icon {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+        z-index: 3;
+    }
+
+    .tile-category-icon.speaking {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .tile-category-icon.writing {
+        background: rgba(139, 92, 246, 0.15);
+        color: #8b5cf6;
+        border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .tile-category-icon.handwritten {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .tile-category-icon svg {
+        width: 14px;
+        height: 14px;
+        stroke-width: 2.5;
+    }
+
+    /* Large Icon (when no thumbnail) - Compact */
+    .tile-icon-large {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        transition: transform 0.3s ease;
+    }
+
+    .activity-tile:hover .tile-icon-large {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .tile-icon-large svg {
+        width: 28px;
+        height: 28px;
+        stroke-width: 2;
+    }
+
+    .tile-icon-large.speaking {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+    }
+
+    .tile-icon-large.writing {
+        background: rgba(139, 92, 246, 0.15);
+        color: #8b5cf6;
+    }
+
+    .tile-icon-large.handwritten {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+    }
+
+    /* Score Badge - Bottom Right Pill - Compact */
+    .tile-score-badge {
+        position: absolute;
+        bottom: 12px;
+        right: 12px;
+        padding: 4px 10px;
+        border-radius: 50px;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        backdrop-filter: blur(10px);
+        box-shadow: var(--shadow-sm);
+        z-index: 2;
+    }
+
+    .tile-score-badge.high {
+        background: rgba(34, 197, 94, 0.9);
+        color: var(--white);
+    }
+
+    .tile-score-badge.medium {
+        background: rgba(245, 158, 11, 0.9);
+        color: var(--white);
+    }
+
+    .tile-score-badge.low {
+        background: rgba(239, 68, 68, 0.9);
+        color: var(--white);
+    }
+
+    .tile-score-badge.no-score {
+        background: rgba(107, 114, 128, 0.7);
+        color: var(--white);
+    }
+
+    /* Tile Content - Bottom Section - Ultra Compact */
+    .tile-content {
+        padding: 8px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        background: var(--card-bg);
+        gap: 4px;
+    }
+
+    .tile-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin: 0;
+        letter-spacing: -0.01em;
+        line-height: 1.3;
+        text-align: left;
+    }
+
+    .tile-date {
+        font-size: 0.625rem;
+        color: var(--text-secondary);
+        opacity: 0.6;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin: 0;
+        font-weight: 400;
+        text-align: left;
+    }
+
+    .tile-date svg {
+        width: 10px;
+        height: 10px;
+        stroke: currentColor;
+        stroke-width: 2;
+        opacity: 0.7;
+    }
+
+    /* Hover Overlay - Action Buttons */
+    .tile-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(2, 6, 23, 0.85);
+        backdrop-filter: blur(6px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        border-radius: 30px;
+        z-index: 10;
+    }
+
+    [data-theme="dark"] .tile-overlay {
+        background: rgba(15, 23, 42, 0.9);
+    }
+
+    .activity-tile:hover .tile-overlay {
+        opacity: 1;
+    }
+
+    .tile-action-btn {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: var(--shadow-md);
+    }
+
+    .tile-action-btn:hover {
+        transform: scale(1.1);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .tile-action-btn.view {
+        color: #3b82f6;
+    }
+
+    .tile-action-btn.delete {
+        color: #ef4444;
+    }
+
+    .tile-action-btn svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        stroke-width: 2.5;
+    }
+
+    /* Empty State Wrapper - Perfect Center */
+    .empty-state-wrapper {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        max-width: 600px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 24px;
+    }
+
+    /* Empty State */
+    .empty-state {
+        max-width: 500px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .empty-state-illustration {
+        width: 200px;
+        height: 200px;
+        margin: 0 auto;
+        color: var(--accent);
+        opacity: 0.8;
+    }
+
+    [data-theme="dark"] .empty-state-illustration {
+        opacity: 0.9;
+    }
+
+    .empty-state-illustration svg {
+        width: 100%;
+        height: 100%;
+    }
+
+    .empty-state-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin: 0;
+        letter-spacing: -0.02em;
+        line-height: 1.3;
+    }
+
+    [data-theme="dark"] .empty-state-title {
+        color: #f1f5f9; /* slate-100 */
+    }
+
+    .empty-state-text {
+        font-size: 1rem;
+        color: var(--text-secondary);
+        margin: 0;
+        line-height: 1.7;
+        max-width: 400px;
+    }
+
+    [data-theme="dark"] .empty-state-text {
+        color: #cbd5e1; /* slate-300 */
+    }
+
+    .empty-state-cta {
+        margin-top: 8px;
+        padding: 14px 32px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: var(--white);
+        border: none;
+        border-radius: 50px;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .empty-state-cta:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .empty-state-cta svg {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2.5;
+        transition: transform 0.2s ease;
+    }
+
+    .empty-state-cta:hover svg {
+        transform: translateX(2px);
+    }
+
+    /* Responsive */
+    @media (max-width: 1199px) {
+        .bento-grid {
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 24px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .history-container {
+            padding: 100px 16px 20px 16px;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .filter-bar {
+            top: 70px;
+            left: 16px;
+            right: 16px;
+            transform: none;
+            padding: 6px;
+            border-radius: 24px;
+        }
+
+        .filter-pill {
+            padding: 8px 16px;
+            font-size: 0.8125rem;
+        }
+
+        .bento-grid-container {
+            height: calc(100vh - 180px);
+            margin-top: 80px;
+        }
+
+        .bento-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 16px;
+        }
+
+        .activity-tile {
+            min-height: 200px;
+        }
+
+        .tile-visual {
+            max-height: 90px;
+        }
+
+        .tile-content {
+            padding: 8px;
+        }
+
+        .tile-title {
+            font-size: 0.875rem;
+        }
+
+        .tile-date {
+            font-size: 0.6875rem;
+        }
+
+        .empty-state-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            max-width: 500px;
+            padding: 0 16px;
+        }
+
+        .empty-state-illustration {
+            width: 160px;
+            height: 160px;
+        }
+
+        .empty-state-title {
+            font-size: 1.5rem;
+        }
+
+        .empty-state-text {
+            font-size: 0.9375rem;
+        }
+
+        .empty-state-cta {
+            padding: 12px 28px;
+            font-size: 0.875rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .bento-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .activity-tile {
+            min-height: 260px;
+        }
+
+        .tile-visual {
+            height: 120px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block header %}
+{% endblock %}
+
+{% block content %}
+<div class="history-container">
+    <!-- Modern Pill Tabs Filter Bar -->
+    <div class="filter-bar">
+        <a href="/history" class="filter-pill {% if not request.args.get('filter') or request.args.get('filter') == 'all' %}active{% endif %}">All</a>
+        <a href="/history?filter=speaking" class="filter-pill {% if request.args.get('filter') == 'speaking' %}active{% endif %}">Speaking AI</a>
+        <a href="/history?filter=writing" class="filter-pill {% if request.args.get('filter') == 'writing' %}active{% endif %}">Writing</a>
+        <a href="/history?filter=handwritten" class="filter-pill {% if request.args.get('filter') == 'handwritten' %}active{% endif %}">OCR AI</a>
+        <a href="/history?filter=quiz" class="filter-pill {% if request.args.get('filter') == 'quiz' %}active{% endif %}">Quizzes</a>
+    </div>
+
+    <!-- Bento Grid Container -->
+    {% if submissions and submissions|length > 0 %}
+    <div class="bento-grid-container">
+        <div class="bento-grid">
+            {% for sub in submissions %}
+        {% set score = sub.grade.score if sub.grade else 0 %}
+        {% set score_class = 'high' if score >= 70 else 'medium' if score >= 40 else 'low' %}
+        {% set has_image = sub.submission_type == 'HANDWRITTEN' and sub.file_path %}
+        <div class="activity-tile" onclick="window.location.href='/feedback/{{ sub.id }}'">
+            <!-- Visual Header with Frame -->
+            <div class="tile-visual {% if has_image %}has-thumbnail{% endif %}">
+                {% if has_image %}
+                <img src="{{ url_for('static', filename='uploads/' + sub.file_path.split('/')[-1]) }}" 
+                     alt="OCR Document" 
+                     class="tile-thumbnail"
+                     onerror="this.parentElement.classList.remove('has-thumbnail'); this.style.display='none';">
+                {% else %}
+                <div class="tile-icon-large {% if sub.submission_type == 'SPEAKING' %}speaking{% elif sub.submission_type == 'WRITING' %}writing{% elif sub.submission_type == 'HANDWRITTEN' %}handwritten{% else %}writing{% endif %}">
+                    {% if sub.submission_type == 'SPEAKING' %}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                    {% elif sub.submission_type == 'HANDWRITTEN' %}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    {% else %}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Category Icon - Corner Badge -->
+                <div class="tile-category-icon {% if sub.submission_type == 'SPEAKING' %}speaking{% elif sub.submission_type == 'WRITING' %}writing{% elif sub.submission_type == 'HANDWRITTEN' %}handwritten{% else %}writing{% endif %}">
+                    {% if sub.submission_type == 'SPEAKING' %}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                    {% elif sub.submission_type == 'HANDWRITTEN' %}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 19h7"></path>
+                        <path d="M12 6v13"></path>
+                        <path d="M5 12l7-7 7 7"></path>
+                    </svg>
+                    {% else %}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    {% endif %}
+                </div>
+
+                <!-- Score Badge - Bottom Right Pill -->
+                <div class="tile-score-badge {{ score_class if sub.grade else 'no-score' }}">
+                    {% if sub.grade %}
+                        {{ "%.1f"|format(score) }}%
+                    {% else %}
+                        —
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="tile-content">
+                <h3 class="tile-title">
+                    {% if sub.submission_type == 'SPEAKING' %}
+                        Speaking Analysis
+                    {% elif sub.submission_type == 'WRITING' %}
+                        Writing Analysis
+                    {% elif sub.submission_type == 'HANDWRITTEN' %}
+                        OCR Analysis
+                    {% else %}
+                        {{ sub.submission_type }} Analysis
+                    {% endif %}
+                </h3>
+                <p class="tile-date">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    {{ sub.created_at.strftime('%b %d, %Y') }}
+                </p>
+            </div>
+
+            <!-- Hover Overlay - Action Buttons -->
+            <div class="tile-overlay">
+                <a href="/feedback/{{ sub.id }}" class="tile-action-btn view" onclick="event.stopPropagation();" title="View Report">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </a>
+                <button class="tile-action-btn delete" onclick="event.stopPropagation(); deleteSubmission({{ sub.id }});" title="Delete Report">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="empty-state-wrapper">
+        <div class="empty-state">
+            <div class="empty-state-illustration">
+                <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Background Circle -->
+                    <circle cx="100" cy="100" r="90" fill="url(#emptyGradient)" opacity="0.1"/>
+                    <defs>
+                        <linearGradient id="emptyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <!-- Archive Shelf -->
+                    <rect x="30" y="120" width="140" height="8" rx="4" fill="currentColor" opacity="0.3"/>
+                    <rect x="30" y="140" width="140" height="8" rx="4" fill="currentColor" opacity="0.3"/>
+                    <rect x="30" y="160" width="140" height="8" rx="4" fill="currentColor" opacity="0.3"/>
+                    
+                    <!-- Robot Character -->
+                    <g transform="translate(100, 80)">
+                        <!-- Robot Head -->
+                        <rect x="-25" y="-30" width="50" height="50" rx="8" fill="currentColor" opacity="0.9"/>
+                        <circle cx="-10" cy="-15" r="4" fill="var(--bg-primary)"/>
+                        <circle cx="10" cy="-15" r="4" fill="var(--bg-primary)"/>
+                        <rect x="-8" y="5" width="16" height="4" rx="2" fill="var(--bg-primary)"/>
+                        
+                        <!-- Robot Body -->
+                        <rect x="-20" y="20" width="40" height="35" rx="6" fill="currentColor" opacity="0.9"/>
+                        <rect x="-15" y="30" width="30" height="20" rx="4" fill="var(--bg-primary)" opacity="0.2"/>
+                        
+                        <!-- Robot Arms -->
+                        <rect x="-30" y="25" width="12" height="25" rx="6" fill="currentColor" opacity="0.9"/>
+                        <rect x="18" y="25" width="12" height="25" rx="6" fill="currentColor" opacity="0.9"/>
+                        
+                        <!-- Magnifying Glass in Hand -->
+                        <g transform="translate(-20, 35)">
+                            <circle cx="0" cy="0" r="12" fill="none" stroke="var(--accent)" stroke-width="2.5" opacity="0.8"/>
+                            <line x1="8" y1="8" x2="15" y2="15" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+                        </g>
+                    </g>
+                    
+                    <!-- Floating Documents -->
+                    <g opacity="0.2">
+                        <rect x="50" y="50" width="20" height="28" rx="2" fill="currentColor" transform="rotate(-15 60 64)"/>
+                        <rect x="130" y="45" width="20" height="28" rx="2" fill="currentColor" transform="rotate(15 140 59)"/>
+                    </g>
+                </svg>
+            </div>
+            <div class="empty-state-title">
+                {% if request.args.get('filter') %}
+                    It's Quiet Here for Now...
+                {% else %}
+                    No History Yet
+                {% endif %}
+            </div>
+            <div class="empty-state-text">
+                {% if request.args.get('filter') %}
+                    No reports found in this category. You can select a different category or start a new analysis.
+                {% else %}
+                    All your completed work will create a success archive here once they're analyzed.
+                {% endif %}
+            </div>
+            <a href="/assignments" class="empty-state-cta">
+                Start Your First Work
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function deleteSubmission(submissionId) {
+        if (confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+            fetch(`/delete_submission/${submissionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error deleting submission: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting submission. Please try again.');
+            });
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AAFS AI{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- Theme Variables (Light Mode) --- */
+        :root {
+            --bg-primary: #ffffff;
+            --sidebar-bg: #fafbfc;
+            --card-bg: #ffffff;
+            --text-main: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --border-color: rgba(0, 0, 0, 0.06);
+            --hover-bg: rgba(0, 122, 255, 0.08);
+            --active-bg: rgba(0, 122, 255, 0.12);
+            --accent: #007aff;
+            --accent-hover: #0051d5;
+            --white: #ffffff;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+            
+            --sidebar-width: 240px;
+            --sidebar-collapsed-width: 60px;
+        }
+
+        /* --- Theme Variables (Dark Mode - Slate & Indigo Palette) --- */
+        [data-theme="dark"] {
+            /* New Dark Mode Variables */
+            --bg-dark: #0f172a;          /* Slate 900 - Deep slate background (replaces pure black) */
+            --card-dark: #1e293b;        /* Slate 800 - Cards floating on background */
+            --accent-dark: #818cf8;     /* Indigo 400 - Bright Indigo (replaces navy blue) */
+            --text-primary-dark: #f1f5f9; /* Slate 100 - Soft white for primary text */
+            --text-secondary-dark: #94a3b8; /* Slate 400 - Muted text for details */
+            
+            /* Legacy Variables (Mapped to New Variables) */
+            --bg-primary: var(--bg-dark);
+            --sidebar-bg: var(--bg-dark);
+            --card-bg: var(--card-dark);
+            --text-main: var(--text-primary-dark);
+            --text-secondary: var(--text-secondary-dark);
+            --border-color: rgba(255, 255, 255, 0.1); /* Light borders with opacity-10 white */
+            --border-dark: rgba(148, 163, 184, 0.2); /* Slate 400 with opacity for subtle borders */
+            --hover-bg: rgba(129, 140, 248, 0.15); /* Indigo hover */
+            --active-bg: rgba(129, 140, 248, 0.2); /* Indigo active */
+            --accent: var(--accent-dark);
+            --accent-hover: #6366f1; /* Indigo 500 - Hover state */
+            --white: var(--text-primary-dark); /* Soft white replacement */
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            min-height: 100vh;
+            line-height: 1.7;
+            letter-spacing: -0.01em;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* --- Sidebar (Tree View Style) --- */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            z-index: 1000;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* Allow dropdown to overflow sidebar when open */
+        .sidebar:has(.profile-section.open) {
+            overflow: visible;
+        }
+
+        body.sidebar-collapsed .sidebar {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        /* Sidebar Top - Toggle button at top left */
+        .sidebar-top {
+            height: 48px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            flex-shrink: 0;
+        }
+
+        body.sidebar-collapsed .sidebar-top {
+            justify-content: center;
+            padding: 0;
+        }
+
+        .sidebar-toggle {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            margin-left: 0;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--hover-bg);
+            color: var(--text-main);
+        }
+
+        .sidebar-toggle svg {
+            width: 16px;
+            height: 16px;
+            stroke-width: 2;
+        }
+
+        .logo-text {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-main);
+            text-decoration: none;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            margin-left: 12px;
+        }
+
+        body.sidebar-collapsed .logo-text {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+            margin-left: 0;
+        }
+
+        /* Navigation Section */
+        .nav-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 0;
+            flex: 1;
+            padding: 8px 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        body.sidebar-collapsed .nav-section {
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 8px;
+            padding: 8px 0;
+        }
+
+        /* Navigation Category - Collapsible Group */
+        .nav-category {
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-category-header {
+            display: flex;
+            align-items: center;
+            padding: 6px 12px;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.15s ease;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .nav-category-header:hover {
+            background: var(--hover-bg);
+        }
+
+        body.sidebar-collapsed .nav-category-header {
+            display: none;
+        }
+
+        .nav-category-toggle {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .nav-category-toggle svg {
+            width: 12px;
+            height: 12px;
+            stroke-width: 2;
+        }
+
+        .nav-category.collapsed .nav-category-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .nav-category.collapsed .nav-category-content {
+            display: none;
+        }
+
+        .nav-category-content {
+            padding-left: 8px;
+        }
+
+        body.sidebar-collapsed .nav-category-content {
+            padding-left: 0;
+        }
+
+        body.sidebar-collapsed .nav-category-header {
+            display: none;
+        }
+
+        body.sidebar-collapsed .nav-category.collapsed .nav-category-content {
+            display: block;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 12px 6px 24px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+            position: relative;
+            font-size: 0.8125rem;
+            font-weight: 400;
+            white-space: nowrap;
+            margin: 1px 8px;
+        }
+
+        body.sidebar-collapsed .nav-link {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            width: auto;
+            margin: 4px;
+            padding-left: 8px;
+            padding-right: 8px;
+        }
+
+        /* Category indicator line for first icon in each category when collapsed */
+        body.sidebar-collapsed .nav-category:not(.collapsed) .nav-link:first-child::before {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 1px;
+        }
+
+        /* Tooltip for collapsed sidebar icons */
+        body.sidebar-collapsed .nav-link {
+            position: relative;
+        }
+
+        /* Tooltip element (created via JavaScript) */
+        .nav-link-tooltip {
+            position: fixed;
+            left: calc(var(--sidebar-collapsed-width) + 12px);
+            top: 0;
+            transform: translateY(-50%) translateX(-4px);
+            background: var(--card-bg);
+            color: var(--text-main);
+            padding: 6px 12px 6px 16px;
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            z-index: 99999;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            clip-path: polygon(6px 0%, 100% 0%, 100% 100%, 6px 100%, 0% 50%);
+        }
+
+        .nav-link-tooltip.show {
+            opacity: 1;
+            transform: translateY(-50%) translateX(0);
+        }
+
+        /* Keep category indicator for first child - ensure it appears above tooltip */
+        body.sidebar-collapsed .nav-category .nav-link:first-child::before {
+            z-index: 10001;
+        }
+
+        .nav-link svg {
+            width: 16px;
+            height: 16px;
+            stroke-width: 1.5;
+            stroke: currentColor;
+            fill: none;
+            flex-shrink: 0;
+        }
+
+        .nav-link svg path {
+            stroke: currentColor;
+            fill: none;
+        }
+
+        .nav-link span {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        body.sidebar-collapsed .nav-link span {
+            display: none;
+        }
+
+        .nav-link:hover {
+            background: var(--hover-bg);
+            color: var(--text-main);
+        }
+
+        .nav-link.active {
+            background: var(--active-bg);
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .nav-link.active svg {
+            color: var(--accent);
+        }
+
+        /* Sidebar Bottom (Theme + Profile) */
+        .sidebar-bottom {
+            padding: 12px 8px;
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        body.sidebar-collapsed .sidebar-bottom {
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 12px 8px;
+            gap: 8px;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle-btn {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        body.sidebar-collapsed .theme-toggle-btn {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 12px;
+            width: auto;
+            margin: 0;
+        }
+
+        .theme-toggle-btn:hover {
+            background: var(--hover-bg);
+            color: var(--text-main);
+        }
+
+        .theme-toggle-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke-width: 1.5;
+            flex-shrink: 0;
+        }
+
+        .theme-toggle-btn span {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        body.sidebar-collapsed .theme-toggle-btn span {
+            display: none;
+        }
+
+        .theme-toggle-btn .sun-icon { display: block; }
+        .theme-toggle-btn .moon-icon { display: none; }
+        [data-theme="dark"] .theme-toggle-btn .sun-icon { display: none; }
+        [data-theme="dark"] .theme-toggle-btn .moon-icon { display: block; }
+
+        /* Profile Section */
+        .profile-section {
+            position: relative;
+        }
+
+        .profile-trigger {
+            width: 100%;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            color: var(--text-main);
+            transition: all 0.15s ease;
+            font-size: 0.8125rem;
+            font-weight: 400;
+        }
+
+        body.sidebar-collapsed .profile-trigger {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            width: auto;
+            margin: 0;
+        }
+
+        /* Perfectly center profile avatar in collapsed mode */
+        body.sidebar-collapsed .profile-avatar {
+            margin: 0 auto;
+        }
+
+        .profile-trigger:hover {
+            background: var(--hover-bg);
+        }
+
+        .profile-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .profile-info {
+            flex: 1;
+            text-align: left;
+            min-width: 0;
+        }
+
+        body.sidebar-collapsed .profile-info {
+            display: none;
+        }
+
+        .profile-name {
+            font-weight: 400;
+            font-size: 0.8125rem;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .profile-arrow {
+            width: 16px;
+            height: 16px;
+            stroke-width: 2;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+
+        .profile-section.open .profile-arrow {
+            transform: rotate(180deg);
+        }
+
+        body.sidebar-collapsed .profile-arrow {
+            display: none;
+        }
+
+        /* Profile Dropdown (Z-Index: 9999 !important) */
+        .profile-dropdown {
+            position: absolute !important;
+            bottom: 60px;
+            left: 12px;
+            right: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 0;
+            display: none;
+            flex-direction: column;
+            z-index: 9999 !important;
+            min-width: 240px;
+            overflow: hidden;
+        }
+
+        [data-theme="dark"] .profile-dropdown {
+            box-shadow: var(--shadow-lg);
+        }
+
+        body.sidebar-collapsed .profile-dropdown {
+            left: 80px;
+            right: auto;
+            min-width: 220px;
+        }
+
+        /* Ensure sidebar doesn't clip dropdown */
+        .profile-section {
+            overflow: visible;
+        }
+
+        .sidebar-bottom {
+            overflow: visible;
+        }
+
+        .profile-section.open .profile-dropdown {
+            display: flex;
+        }
+
+        /* Profile Header in Dropdown */
+        .profile-dropdown-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .profile-dropdown-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 700;
+            font-size: 1.125rem;
+            flex-shrink: 0;
+        }
+
+        .profile-dropdown-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .profile-dropdown-name {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0 0 2px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .profile-dropdown-email {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Dropdown Menu Items */
+        .profile-dropdown-menu {
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .profile-dropdown-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .profile-dropdown-item:hover {
+            background: var(--hover-bg);
+            color: var(--accent);
+        }
+
+        .profile-dropdown-item svg {
+            width: 18px;
+            height: 18px;
+            stroke-width: 1.5;
+            flex-shrink: 0;
+        }
+
+        /* Logout item - special styling */
+        .profile-dropdown-item.logout {
+            color: #ef4444;
+        }
+
+        .profile-dropdown-item.logout:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        /* --- Main Area --- */
+        .main-area {
+            margin-left: var(--sidebar-width);
+            background: var(--bg-primary);
+            min-height: 100vh;
+            transition: margin-left 0.3s ease, background-color 0.3s ease;
+        }
+
+        body.sidebar-collapsed .main-area {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+
+        /* --- Content Wrapper --- */
+        .content-wrapper {
+            padding: 32px;
+        }
+
+        /* --- Cards --- */
+        .glass-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 16px;
+            transition: all 0.2s ease;
+        }
+
+        /* --- Typography --- */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+            line-height: 1.3;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin: 0 0 20px 0;
+        }
+
+        p {
+            line-height: 1.5;
+            color: var(--text-secondary);
+            letter-spacing: -0.01em;
+        }
+
+        /* --- Buttons --- */
+        .btn-primary,
+        .btn-submit,
+        .btn-save,
+        .btn-start,
+        .btn-create {
+            background: var(--accent);
+            color: var(--white);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            letter-spacing: -0.01em;
+        }
+
+        .btn-primary:hover,
+        .btn-submit:hover,
+        .btn-save:hover,
+        .btn-start:hover,
+        .btn-create:hover {
+            background: var(--accent-hover);
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            body.sidebar-collapsed .sidebar {
+                transform: translateX(0);
+                width: var(--sidebar-width);
+            }
+            
+            .main-area {
+                margin-left: 0;
+            }
+
+            body.sidebar-collapsed .main-area {
+                margin-left: var(--sidebar-width);
+            }
+
+            .content-wrapper {
+                padding: 20px;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar (Flush Left, Zero Gap) -->
+    <aside class="sidebar">
+        <!-- Sidebar Top -->
+        <div class="sidebar-top">
+            <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Navigation Section -->
+        <nav class="nav-section">
+            {% if user.is_authenticated and user.role == 'Student' %}
+            <!-- MAIN Category -->
+            <div class="nav-category" data-category="main">
+                <div class="nav-category-header" onclick="toggleCategory(this)">
+                    <div class="nav-category-toggle">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <span>MAIN</span>
+                </div>
+                <div class="nav-category-content">
+                    <a href="/dashboard" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" title="Dashboard">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="/assignments" class="nav-link {% if request.endpoint == 'view_assignments' or request.endpoint == 'assignments' %}active{% endif %}" title="Assignments">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        <span>Assignments</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- AI TOOLS Category -->
+            <div class="nav-category" data-category="ai-tools">
+                <div class="nav-category-header" onclick="toggleCategory(this)">
+                    <div class="nav-category-toggle">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <span>AI TOOLS</span>
+                </div>
+                <div class="nav-category-content">
+                    <a href="/speaking" class="nav-link {% if request.endpoint == 'speaking' %}active{% endif %}" title="Speaking">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                        <span>Speaking</span>
+                    </a>
+                    <a href="/submit/writing" class="nav-link {% if request.endpoint == 'submit_writing' %}active{% endif %}" title="Analysis">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        <span>Analysis</span>
+                    </a>
+                    <a href="/submit/handwritten" class="nav-link {% if request.endpoint == 'submit_handwritten' %}active{% endif %}" title="OCR AI">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <span>OCR AI</span>
+                    </a>
+                    <a href="/history" class="nav-link {% if request.endpoint == 'history' %}active{% endif %}" title="History">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                            <path d="M12 2v4"></path>
+                            <path d="M12 18v4"></path>
+                            <path d="M4.93 4.93l2.83 2.83"></path>
+                            <path d="M16.24 16.24l2.83 2.83"></path>
+                            <path d="M2 12h4"></path>
+                            <path d="M18 12h4"></path>
+                            <path d="M4.93 19.07l2.83-2.83"></path>
+                            <path d="M16.24 7.76l2.83-2.83"></path>
+                        </svg>
+                        <span>History</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- PROGRESS Category -->
+            <div class="nav-category" data-category="progress">
+                <div class="nav-category-header" onclick="toggleCategory(this)">
+                    <div class="nav-category-toggle">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <span>PROGRESS</span>
+                </div>
+                <div class="nav-category-content">
+                    <a href="/quizzes" class="nav-link {% if request.endpoint == 'quizzes' %}active{% endif %}" title="Quizzes">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <span>Quizzes</span>
+                    </a>
+                    <a href="/goals" class="nav-link {% if request.endpoint == 'goals' %}active{% endif %}" title="My Goals">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <circle cx="12" cy="12" r="6"></circle>
+                            <circle cx="12" cy="12" r="2"></circle>
+                        </svg>
+                        <span>My Goals</span>
+                    </a>
+                </div>
+            </div>
+            {% elif user.is_authenticated and user.role == 'Instructor' %}
+            <!-- MAIN Category -->
+            <div class="nav-category" data-category="main">
+                <div class="nav-category-header" onclick="toggleCategory(this)">
+                    <div class="nav-category-toggle">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <span>MAIN</span>
+                </div>
+                <div class="nav-category-content">
+                    <a href="/instructor/dashboard" class="nav-link {% if request.endpoint == 'instructor_dashboard' %}active{% endif %}" title="Dashboard">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="/instructor/students" class="nav-link {% if request.endpoint == 'instructor_students' %}active{% endif %}" title="Students">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <span>Students</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- MANAGEMENT Category -->
+            <div class="nav-category" data-category="management">
+                <div class="nav-category-header" onclick="toggleCategory(this)">
+                    <div class="nav-category-toggle">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <span>MANAGEMENT</span>
+                </div>
+                <div class="nav-category-content">
+                    <a href="/instructor/assignments" class="nav-link {% if request.endpoint == 'instructor_assignments' %}active{% endif %}" title="Assignments">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        <span>Assignments</span>
+                    </a>
+                    <a href="/instructor/library" class="nav-link {% if request.endpoint == 'instructor_library' %}active{% endif %}" title="Library">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                        <span>Library</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- REPORTS Category -->
+            <div class="nav-category" data-category="reports">
+                <div class="nav-category-header" onclick="toggleCategory(this)">
+                    <div class="nav-category-toggle">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <span>REPORTS</span>
+                </div>
+                <div class="nav-category-content">
+                    <a href="/instructor/analytics" class="nav-link {% if request.endpoint == 'instructor_analytics' %}active{% endif %}" title="Analytics">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="/instructor/feedback" class="nav-link {% if request.endpoint == 'instructor_feedback' %}active{% endif %}" title="AI Feedback">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            <path d="M13 8H7"></path>
+                            <path d="M17 12H7"></path>
+                        </svg>
+                        <span>AI Feedback</span>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </nav>
+
+        <!-- Sidebar Bottom (Theme + Profile) -->
+        <div class="sidebar-bottom">
+            <!-- Theme Toggle -->
+            <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">
+                <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                <span>Theme</span>
+            </button>
+
+            <!-- Profile Section -->
+            {% if user.is_authenticated %}
+            <div class="profile-section" id="profileSection">
+                <button class="profile-trigger" onclick="toggleProfileDropdown()">
+                    <div class="profile-avatar">{{ user.username[0] | upper }}</div>
+                    <div class="profile-info">
+                        <div class="profile-name">{{ user.username }}</div>
+                    </div>
+                    <svg class="profile-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="profile-dropdown">
+                    <!-- Profile Header -->
+                    <div class="profile-dropdown-header">
+                        <div class="profile-dropdown-avatar">{{ user.username[0] | upper }}</div>
+                        <div class="profile-dropdown-info">
+                            <div class="profile-dropdown-name">{{ user.username }}</div>
+                            <div class="profile-dropdown-email">{{ user.email if user.email else 'Student' }}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Menu Items -->
+                    <div class="profile-dropdown-menu">
+                        <a href="/settings" class="profile-dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span>View Profile</span>
+                        </a>
+                        <a href="/settings" class="profile-dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"></path>
+                            </svg>
+                            <span>Settings</span>
+                        </a>
+                        <a href="/logout" class="profile-dropdown-item logout">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- Main Area -->
+    <div class="main-area">
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            {% block header %}{% endblock %}
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script>
+        // Set up tooltips for collapsed sidebar icons
+        (function() {
+            let tooltipElement = null;
+
+            function createTooltip() {
+                if (!tooltipElement) {
+                    tooltipElement = document.createElement('div');
+                    tooltipElement.className = 'nav-link-tooltip';
+                    document.body.appendChild(tooltipElement);
+                }
+                return tooltipElement;
+            }
+
+            function showTooltip(link) {
+                if (!document.body.classList.contains('sidebar-collapsed')) return;
+                
+                const span = link.querySelector('span');
+                if (!span) return;
+
+                const tooltip = createTooltip();
+                tooltip.textContent = span.textContent.trim();
+                
+                const rect = link.getBoundingClientRect();
+                const top = rect.top + (rect.height / 2);
+                
+                tooltip.style.top = top + 'px';
+                tooltip.classList.add('show');
+            }
+
+            function hideTooltip() {
+                if (tooltipElement) {
+                    tooltipElement.classList.remove('show');
+                }
+            }
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('mouseenter', function() {
+                    showTooltip(this);
+                });
+                
+                link.addEventListener('mouseleave', function() {
+                    hideTooltip();
+                });
+            });
+        })();
+
+        // Sidebar Toggle
+        function toggleSidebar() {
+            document.body.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebarCollapsed', document.body.classList.contains('sidebar-collapsed'));
+        }
+
+        // Load sidebar state
+        (function() {
+            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (sidebarCollapsed) {
+                document.body.classList.add('sidebar-collapsed');
+            }
+        })();
+
+        // Toggle Category (Collapsible Groups)
+        function toggleCategory(header) {
+            const category = header.closest('.nav-category');
+            if (category) {
+                category.classList.toggle('collapsed');
+                const categoryName = category.getAttribute('data-category');
+                if (categoryName) {
+                    localStorage.setItem(`category_${categoryName}_collapsed`, category.classList.contains('collapsed'));
+                }
+            }
+        }
+
+        // Load category collapsed states
+        (function() {
+            const categories = document.querySelectorAll('.nav-category');
+            categories.forEach(category => {
+                const categoryName = category.getAttribute('data-category');
+                if (categoryName) {
+                    const isCollapsed = localStorage.getItem(`category_${categoryName}_collapsed`) === 'true';
+                    if (isCollapsed) {
+                        category.classList.add('collapsed');
+                    }
+                }
+            });
+        })();
+
+        // Theme Toggle
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Load saved theme
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+
+        // Profile Dropdown Toggle
+        function toggleProfileDropdown() {
+            const profileSection = document.getElementById('profileSection');
+            const sidebar = document.querySelector('.sidebar');
+            if (profileSection) {
+                const isOpen = profileSection.classList.toggle('open');
+                // Allow dropdown to overflow sidebar when open
+                if (isOpen && sidebar) {
+                    sidebar.style.overflow = 'visible';
+                } else if (sidebar) {
+                    sidebar.style.overflow = '';
+                }
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const profileSection = document.getElementById('profileSection');
+            const sidebar = document.querySelector('.sidebar');
+            if (profileSection && !profileSection.contains(event.target)) {
+                profileSection.classList.remove('open');
+                if (sidebar) {
+                    sidebar.style.overflow = '';
+                }
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

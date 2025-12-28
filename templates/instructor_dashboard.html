@@ -1,0 +1,1810 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Class Management - AAFS AI{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    /* Main Container - Prevent Horizontal Scroll */
+    .dashboard-container {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    /* Content Wrapper - Align with Sidebar MAIN */
+    .content-wrapper {
+        padding-top: 48px !important;  /* Align with sidebar-top height (MAIN line level) */
+    }
+
+    /* Welcome Banner - More Compact, Aligned with Sidebar MAIN */
+    .welcome-banner {
+        width: 100%;
+        max-width: 100%;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-top: 0;  /* No top margin, aligned with content-wrapper top */
+        margin-bottom: 20px;
+        color: var(--white);
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .welcome-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .welcome-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--white);
+        margin: 0 0 2px 0;
+        letter-spacing: -0.02em;
+    }
+
+    .welcome-subtitle {
+        font-size: 0.8125rem;
+        color: rgba(248, 250, 252, 0.85);
+        margin: 0;
+        line-height: 1.4;
+    }
+
+    .welcome-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+        text-align: right;
+    }
+
+    .welcome-date {
+        font-size: 0.8125rem;
+        color: rgba(248, 250, 252, 0.9);
+        font-weight: 500;
+    }
+
+    .welcome-motivation {
+        font-size: 0.75rem;
+        color: rgba(248, 250, 252, 0.75);
+        font-style: italic;
+    }
+
+    /* Dashboard Header Section (Below Banner) */
+    .dashboard-header-section {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 100%;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .dashboard-header-section h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    /* Header Actions */
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 0 0 auto;
+        justify-content: flex-end;
+        max-width: none;
+    }
+
+    .search-bar {
+        display: flex;
+        align-items: center;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 10px 16px;
+        gap: 10px;
+        width: 280px;
+        min-width: 280px;
+        height: 42px;
+        flex-shrink: 0;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    .search-bar:focus-within {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .search-bar svg {
+        width: 18px;
+        height: 18px;
+        stroke: var(--text-secondary);
+        flex-shrink: 0;
+    }
+
+    .search-bar input {
+        border: none;
+        outline: none;
+        flex: 1;
+        font-size: 0.9rem;
+        color: var(--text-main);
+        background: transparent;
+    }
+
+    .search-bar input::placeholder {
+        color: var(--text-secondary);
+    }
+
+    .btn-create-assignment {
+        padding: 0 8px; /* px-2 - reduced padding */
+        background: var(--accent);
+        color: var(--white);
+        border: none;
+        border-radius: 8px;
+        font-weight: 500; /* font-medium */
+        font-size: 0.6875rem; /* text-[11px] - 11px for compact fit */
+        letter-spacing: -0.01em; /* tracking-tighter - tighter letter spacing */
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 140px;
+        min-width: 140px;
+        height: 42px;
+        flex-shrink: 0;
+        gap: 6px; /* Slightly reduced gap */
+        transition: all 0.2s ease;
+        text-decoration: none;
+        white-space: nowrap;
+        box-sizing: border-box;
+    }
+
+    .btn-create-assignment:hover {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-create-assignment svg {
+        width: 16px; /* w-4 - 16px for compact look */
+        height: 16px; /* h-4 */
+        stroke: currentColor;
+        stroke-width: 2;
+        flex-shrink: 0; /* Prevent icon from shrinking */
+    }
+
+    /* Metric Cards - Compact Modern SaaS Style */
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+        max-width: 100%;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 50px;
+        padding: 8px 20px 8px 32px !important;
+        padding-top: 8px !important;
+        margin-top: 0 !important;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        max-width: 100%;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 18px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--accent);
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--accent);
+    }
+
+    .stat-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .stat-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    .stat-card-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(99, 102, 241, 0.12);
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover .stat-card-icon {
+        background: rgba(99, 102, 241, 0.18);
+        transform: scale(1.05);
+    }
+
+    .stat-card-icon svg {
+        width: 16px;
+        height: 16px;
+        stroke: #6366f1;
+        stroke-width: 2;
+    }
+
+    /* Icon color variations */
+    .stat-card:nth-child(1) .stat-card-icon {
+        background: rgba(16, 185, 129, 0.12);
+    }
+    .stat-card:nth-child(1) .stat-card-icon svg {
+        stroke: #10b981;
+    }
+
+    .stat-card:nth-child(2) .stat-card-icon {
+        background: rgba(245, 158, 11, 0.12);
+    }
+    .stat-card:nth-child(2) .stat-card-icon svg {
+        stroke: #f59e0b;
+    }
+
+    .stat-card:nth-child(3) .stat-card-icon {
+        background: rgba(99, 102, 241, 0.12);
+    }
+    .stat-card:nth-child(3) .stat-card-icon svg {
+        stroke: #6366f1;
+    }
+
+    .stat-card:nth-child(4) .stat-card-icon {
+        background: rgba(236, 72, 153, 0.12);
+    }
+    .stat-card:nth-child(4) .stat-card-icon svg {
+        stroke: #ec4899;
+    }
+
+    /* Text content wrapper */
+    .stat-card-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        flex: 1;
+        min-width: 0;
+        gap: 2px;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    .stat-card .label {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1.2;
+    }
+
+    .stat-card .value {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Sparkline Container - Next to Value */
+    .sparkline-container {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+
+    .sparkline-chart {
+        width: 50px;
+        height: 16px;
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .sparkline-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.6rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: rgba(156, 163, 175, 0.1);
+        color: #6b7280;
+        border: 1px solid rgba(156, 163, 175, 0.2);
+    }
+
+    .stat-card-link {
+        font-size: 0.75rem;
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: gap 0.2s ease;
+        opacity: 0.8;
+        flex-shrink: 0;
+        align-self: center;
+    }
+
+    .stat-card-link:hover {
+        gap: 8px;
+    }
+
+    .stat-card-link svg {
+        width: 14px;
+        height: 14px;
+        stroke: currentColor;
+    }
+
+    /* Charts Container - Balanced Compact Layout */
+    .charts-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 40px; /* gap-10 - belirgin boşluk üstteki kartlardan sonra */
+        margin-bottom: 24px;
+        max-width: 100%;
+    }
+
+    .chart-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 32px; /* p-8 - increased padding */
+        max-width: 100%;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* Grade Distribution - Horizontal Layout with More Padding */
+    .chart-card:has(#distChart) {
+        padding: 40px 48px; /* p-10 with extra horizontal padding - more visual breathing room */
+    }
+
+    .chart-card:has(#distChart) h4 {
+        margin-bottom: 24px; /* More space between title and content */
+    }
+
+    .grade-distribution-container {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 48px; /* gap-12 equivalent - 48px gap */
+        width: 100%;
+        height: 100%;
+    }
+
+    .grade-chart-wrapper {
+        flex: 0 0 auto;
+        position: relative;
+        width: 200px;
+        height: 200px;
+    }
+
+    .grade-legend {
+        display: flex;
+        flex-direction: column;
+        gap: 16px; /* space-y-4 - 16px between items */
+        flex: 0 0 auto;
+    }
+
+    .grade-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.9375rem; /* Slightly larger font for readability */
+        font-weight: 500;
+        color: var(--text-main);
+        padding: 8px 0; /* Extra vertical padding for visual breathing room */
+    }
+
+    .grade-legend-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .grade-legend-percentage {
+        margin-left: 4px;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .grade-legend-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .grade-legend-dot.high {
+        background-color: #22c55e; /* Green */
+    }
+
+    .grade-legend-dot.mid {
+        background-color: #f59e0b; /* Orange/Amber */
+    }
+
+    .grade-legend-dot.low {
+        background-color: #ef4444; /* Red */
+    }
+
+    /* Dark Mode - Legend Text */
+    [data-theme="dark"] .grade-legend-item {
+        color: #e2e8f0 !important; /* text-slate-200 - Light gray/white */
+    }
+
+    [data-theme="dark"] .grade-legend-percentage {
+        color: #cbd5e1 !important; /* Slightly lighter for percentage */
+    }
+
+    [data-theme="dark"] .success-rate-summary-value {
+        color: #f8fafc !important; /* White text in dark mode */
+    }
+
+    [data-theme="dark"] .success-rate-summary-label {
+        color: #cbd5e1 !important; /* Light gray label in dark mode */
+    }
+
+    /* Grade Distribution Legend Text Color - Dark Mode Fix */
+    .chart-card:has(#distChart) .chartjs-legend li,
+    .chart-card:has(#distChart) .chartjs-legend-item,
+    .chart-card:has(#distChart) .chartjs-legend-item span {
+        color: var(--text-main) !important;
+    }
+
+    [data-theme="dark"] .chart-card:has(#distChart) .chartjs-legend li,
+    [data-theme="dark"] .chart-card:has(#distChart) .chartjs-legend-item,
+    [data-theme="dark"] .chart-card:has(#distChart) .chartjs-legend-item span,
+    [data-theme="dark"] .chart-card:has(#distChart) .chartjs-legend li span {
+        color: #f8fafc !important; /* Slate 50 - KESIN beyaz renk dark mode */
+        fill: #f8fafc !important; /* SVG fill için */
+    }
+
+    /* All legend text in dark mode - BRUTE FORCE CSS */
+    [data-theme="dark"] .chartjs-legend li,
+    [data-theme="dark"] .chartjs-legend-item,
+    [data-theme="dark"] .chartjs-legend-item span,
+    [data-theme="dark"] .chartjs-legend li span,
+    [data-theme="dark"] .chartjs-legend-item-text,
+    [data-theme="dark"] .chartjs-legend-item-text span {
+        color: #f8fafc !important; /* Slate 50 - KESIN beyaz renk */
+        fill: #f8fafc !important; /* SVG için */
+    }
+
+    /* Chart.js canvas içindeki tüm text elementleri */
+    [data-theme="dark"] #distChart + *,
+    [data-theme="dark"] .chart-card:has(#distChart) canvas + * {
+        color: #f8fafc !important;
+    }
+
+    .chart-card h4 {
+        margin: 0 0 16px 0;
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    /* Dark Mode - Card Titles and Text */
+    [data-theme="dark"] .chart-card h4 {
+        color: #f1f5f9 !important; /* Slate 100 - Light gray/white */
+    }
+
+    [data-theme="dark"] .chart-card {
+        color: #f1f5f9; /* Slate 100 for all text in dark mode */
+    }
+
+    /* Chart Wrapper - Isolates canvas and center text from header */
+    .chart-wrapper {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Doughnut Chart Success Rate - Top Right */
+    .doughnut-success-rate {
+        position: absolute !important;
+        top: 8px !important;
+        right: 8px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        text-align: right !important;
+        pointer-events: none;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-end !important;
+        justify-content: flex-start !important;
+        z-index: 10;
+    }
+
+    .doughnut-center-value {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block;
+    }
+
+    .doughnut-center-label {
+        font-size: 0.65rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 2px;
+        font-weight: 600;
+        margin: 0 !important;
+        padding: 0 !important;
+        margin-top: 2px !important;
+        line-height: 1 !important;
+        display: block;
+    }
+
+    /* Empty State for Charts - Elegant Design */
+    .chart-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 250px;
+        color: var(--text-secondary);
+        text-align: center;
+        padding: 40px;
+        background: linear-gradient(135deg, rgba(148, 163, 184, 0.05) 0%, rgba(148, 163, 184, 0.02) 100%);
+        border-radius: 8px;
+        border: 1px dashed var(--border-color);
+    }
+
+    .chart-empty-state svg {
+        width: 56px;
+        height: 56px;
+        stroke: var(--text-secondary);
+        opacity: 0.3;
+        margin-bottom: 16px;
+    }
+
+    .chart-empty-state p {
+        font-size: 0.875rem;
+        margin: 0;
+        color: var(--text-secondary);
+        opacity: 0.7;
+        font-weight: 500;
+    }
+
+    /* Empty State for Stat Cards */
+    .stat-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 120px;
+        color: var(--text-secondary);
+        text-align: center;
+        padding: 20px;
+        background: linear-gradient(135deg, rgba(148, 163, 184, 0.05) 0%, rgba(148, 163, 184, 0.02) 100%);
+        border-radius: 8px;
+        border: 1px dashed var(--border-color);
+    }
+
+    .stat-empty-state svg {
+        width: 32px;
+        height: 32px;
+        stroke: var(--text-secondary);
+        opacity: 0.3;
+        margin-bottom: 8px;
+    }
+
+    .stat-empty-state p {
+        font-size: 0.75rem;
+        margin: 0;
+        color: var(--text-secondary);
+        opacity: 0.6;
+        font-weight: 500;
+    }
+
+    .chart-card h4 {
+        margin: 0 0 20px 0;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .chart-box {
+        height: 220px;
+        position: relative;
+        padding-bottom: 0; /* No extra padding needed with horizontal layout */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Grade Distribution specific chart-box */
+    .chart-card:has(#distChart) .chart-box {
+        height: 240px; /* Slightly taller for better balance */
+    }
+
+    /* Professional Empty State for Student Performance Comparison */
+    .performance-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        width: 100%;
+        padding: 30px 20px;
+        position: relative;
+        overflow: hidden;
+        min-height: 0;
+    }
+
+    /* Dotted Line Chart Silhouette Background - More Visible */
+    .chart-silhouette {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        opacity: 0.15;
+        pointer-events: none;
+    }
+
+    .chart-silhouette svg {
+        width: 100%;
+        height: 100%;
+        color: var(--text-main);
+    }
+
+    /* Empty State Title - More Prominent */
+    .empty-state-title {
+        font-size: 1.125rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 28px;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        letter-spacing: -0.01em;
+    }
+
+    /* Roadmap Steps - Horizontal Layout */
+    .roadmap-steps {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: flex-start;
+        gap: 16px;
+        width: 100%;
+        max-width: 100%;
+        position: relative;
+        z-index: 1;
+        flex-wrap: wrap;
+    }
+
+    .roadmap-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 120px;
+        max-width: 180px;
+        padding: 0;
+    }
+
+    /* Step Number Circle - Large and Prominent */
+    .roadmap-step-number {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: rgba(99, 102, 241, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #6366f1;
+        border: 2px solid rgba(99, 102, 241, 0.2);
+    }
+
+    .roadmap-step-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 4px;
+        width: 100%;
+    }
+
+    .roadmap-step-title {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin: 0;
+        line-height: 1.3;
+    }
+
+    .roadmap-step-description {
+        font-size: 0.6875rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+        margin: 0;
+    }
+
+    /* Student Table */
+    .table-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 24px;
+        overflow-x: auto;
+        max-width: 100%;
+    }
+
+    .table-card h4 {
+        margin: 0 0 20px 0;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    thead th {
+        text-align: left;
+        padding: 12px 16px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    tbody td {
+        padding: 16px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.9rem;
+    }
+
+    tbody tr:hover {
+        background: var(--hover-bg);
+    }
+
+    tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .student-name {
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .submission-date {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .submission-type {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border: 1px solid transparent;
+    }
+
+    .status-badge.grading,
+    .status-badge.pending {
+        background: rgba(251, 191, 36, 0.15);
+        color: #d97706;
+        border-color: rgba(251, 191, 36, 0.3);
+    }
+
+    .status-badge.completed {
+        background: rgba(16, 185, 129, 0.15);
+        color: #059669;
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .status-badge.review-required {
+        background: rgba(239, 68, 68, 0.15);
+        color: #dc2626;
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .ai-score {
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    .ai-score.high {
+        color: #10b981;
+    }
+
+    .ai-score.medium {
+        color: #f59e0b;
+    }
+
+    .ai-score.low {
+        color: #ef4444;
+    }
+
+    /* Sidebar Sync - Flexible Layout */
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* Ensure proper spacing with sidebar */
+    .dashboard-header-section {
+        margin-bottom: 20px;
+    }
+
+    .table-card {
+        margin-top: 0;
+    }
+
+    .table-card h4 {
+        margin-bottom: 16px;
+        font-size: 0.9375rem;
+    }
+
+    @media (max-width: 1200px) {
+        .analytics-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .charts-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .analytics-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .dashboard-header-section {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .search-bar {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .welcome-banner {
+            padding: 16px 20px;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .welcome-meta {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .welcome-title {
+            font-size: 1.25rem;
+        }
+
+        .btn-create-assignment {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block header %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+<!-- Welcome Banner - Compact with Date & Motivation -->
+<div class="welcome-banner">
+    <div class="welcome-content">
+    <h1 class="welcome-title">Welcome back, {% if user.is_authenticated %}{{ user.username }}{% else %}Instructor{% endif %}! 👋</h1>
+    <p class="welcome-subtitle">Monitor class performance and manage assignments effectively.</p>
+    </div>
+    <div class="welcome-meta">
+        <div class="welcome-date" id="currentDate"></div>
+        <div class="welcome-motivation" id="motivationText"></div>
+    </div>
+</div>
+
+<!-- Dashboard Header Section -->
+<div class="dashboard-header-section">
+    <h2>Class Management</h2>
+    <div class="header-actions">
+        <div class="search-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input type="text" id="studentSearch" placeholder="Search student or type...">
+        </div>
+        <a href="/instructor/assignments/create" class="btn-create-assignment">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Create Assignment
+        </a>
+    </div>
+</div>
+
+<!-- Metric Cards -->
+<section class="analytics-grid">
+    <div class="stat-card" onclick="window.location.href='/instructor/submissions'">
+        <div class="stat-card-header">
+            <div class="stat-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+            </div>
+        </div>
+        <div class="stat-card-content">
+        <div class="label">Total Submissions</div>
+            <div class="value">
+                {{ submissions | length }}
+                <div class="sparkline-container">
+                    <canvas class="sparkline-chart" id="sparkline-submissions"></canvas>
+                    <span class="sparkline-badge" id="sparkline-badge-submissions" style="display: none;">Steady</span>
+                </div>
+            </div>
+        </div>
+        <a href="/instructor/submissions" class="stat-card-link" onclick="event.stopPropagation();">
+            View Details
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+        </a>
+    </div>
+
+    <div class="stat-card" onclick="window.location.href='/instructor/pending'">
+        <div class="stat-card-header">
+            <div class="stat-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+            </div>
+        </div>
+        <div class="stat-card-content">
+        <div class="label">Pending AI</div>
+            <div class="value">
+                {{ pending_count | default(0) }}
+                <div class="sparkline-container">
+                    <canvas class="sparkline-chart" id="sparkline-pending"></canvas>
+                    <span class="sparkline-badge" id="sparkline-badge-pending" style="display: none;">Steady</span>
+                </div>
+            </div>
+        </div>
+        <a href="/instructor/pending" class="stat-card-link" onclick="event.stopPropagation();">
+            View Details
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+        </a>
+    </div>
+
+    <div class="stat-card" onclick="window.location.href='/instructor/analytics'">
+        <div class="stat-card-header">
+            <div class="stat-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+            </div>
+        </div>
+        <div class="stat-card-content">
+        <div class="label">Class Avg</div>
+            <div class="value">
+                {{ class_avg | default('0.0') }}
+                <div class="sparkline-container">
+                    <canvas class="sparkline-chart" id="sparkline-avg"></canvas>
+                    <span class="sparkline-badge" id="sparkline-badge-avg" style="display: none;">Steady</span>
+                </div>
+            </div>
+        </div>
+        <a href="/instructor/analytics" class="stat-card-link" onclick="event.stopPropagation();">
+            View Details
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+        </a>
+    </div>
+
+    <div class="stat-card" onclick="window.location.href='/instructor/students'">
+        <div class="stat-card-header">
+            <div class="stat-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+            </div>
+        </div>
+        <div class="stat-card-content">
+        <div class="label">Active Students</div>
+            <div class="value">
+                {{ active_count | default(0) }}
+                <div class="sparkline-container">
+                    <canvas class="sparkline-chart" id="sparkline-active"></canvas>
+                    <span class="sparkline-badge" id="sparkline-badge-active" style="display: none;">Steady</span>
+                </div>
+            </div>
+        </div>
+        <a href="/instructor/students" class="stat-card-link" onclick="event.stopPropagation();">
+            View Details
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+        </a>
+    </div>
+</section>
+
+<!-- Charts Area -->
+<div class="charts-container">
+    <div class="chart-card">
+        <h4>Student Performance Comparison</h4>
+        <div class="chart-box">
+            <canvas id="groupedBarChart"></canvas>
+            <!-- Professional Empty State -->
+            <div class="performance-empty-state" id="performanceEmptyState" style="display: none;">
+                <!-- Dotted Line Chart Silhouette -->
+                <div class="chart-silhouette">
+                    <svg viewBox="0 0 400 200" preserveAspectRatio="none">
+                        <!-- Dotted grid lines -->
+                        <defs>
+                            <pattern id="dotted" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+                                <circle cx="4" cy="4" r="1" fill="currentColor" opacity="0.3"/>
+                            </pattern>
+                        </defs>
+                        <!-- Horizontal grid lines -->
+                        <line x1="40" y1="40" x2="360" y2="40" stroke="url(#dotted)" stroke-width="1" fill="none"/>
+                        <line x1="40" y1="80" x2="360" y2="80" stroke="url(#dotted)" stroke-width="1" fill="none"/>
+                        <line x1="40" y1="120" x2="360" y2="120" stroke="url(#dotted)" stroke-width="1" fill="none"/>
+                        <line x1="40" y1="160" x2="360" y2="160" stroke="url(#dotted)" stroke-width="1" fill="none"/>
+                        <!-- Vertical grid lines -->
+                        <line x1="100" y1="20" x2="100" y2="180" stroke="url(#dotted)" stroke-width="1" fill="none"/>
+                        <line x1="200" y1="20" x2="200" y2="180" stroke="url(#dotted)" stroke-width="1" fill="none"/>
+                        <line x1="300" y1="20" x2="300" y2="180" stroke="url(#dotted)" stroke-width="1" fill="none"/>
+                        <!-- Dotted bar outlines (3 groups of 3 bars) - More visible with varied heights -->
+                        <rect x="60" y="90" width="20" height="70" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+                        <rect x="85" y="60" width="20" height="100" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+                        <rect x="110" y="75" width="20" height="85" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+                        <rect x="160" y="70" width="20" height="90" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+                        <rect x="185" y="85" width="20" height="75" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+                        <rect x="210" y="50" width="20" height="110" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+                        <rect x="260" y="55" width="20" height="105" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+                        <rect x="285" y="80" width="20" height="80" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+                        <rect x="310" y="95" width="20" height="65" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+                    </svg>
+                </div>
+                <!-- Title -->
+                <h5 class="empty-state-title">Sınıfını Keşfetmeye Hazır mısın?</h5>
+                <!-- Roadmap Steps - Horizontal -->
+                <div class="roadmap-steps">
+                    <div class="roadmap-step">
+                        <div class="roadmap-step-number">1</div>
+                        <div class="roadmap-step-content">
+                            <div class="roadmap-step-title">Ödevi Oluştur</div>
+                            <div class="roadmap-step-description">Hazırlığını tamamla</div>
+                        </div>
+                    </div>
+                    <div class="roadmap-step">
+                        <div class="roadmap-step-number">2</div>
+                        <div class="roadmap-step-content">
+                            <div class="roadmap-step-title">Öğrencileri Bekle</div>
+                            <div class="roadmap-step-description">Projelerini yüklemelerini sağla</div>
+                        </div>
+                    </div>
+                    <div class="roadmap-step">
+                        <div class="roadmap-step-number">3</div>
+                        <div class="roadmap-step-content">
+                            <div class="roadmap-step-title">Analizi Gör</div>
+                            <div class="roadmap-step-description">Performans karşılaştırmalarını izle</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="chart-card">
+        <h4>Grade Distribution</h4>
+        <div class="chart-box">
+            <div class="grade-distribution-container">
+                <div class="grade-chart-wrapper">
+                    <canvas id="distChart"></canvas>
+                </div>
+                <div class="grade-legend" id="gradeLegend">
+                    <div class="grade-legend-item">
+                        <div class="grade-legend-dot high"></div>
+                        <div class="grade-legend-label">
+                            <span>High (75+)</span>
+                            <span class="grade-legend-percentage" id="highPercentage">- %0</span>
+                        </div>
+                    </div>
+                    <div class="grade-legend-item">
+                        <div class="grade-legend-dot mid"></div>
+                        <div class="grade-legend-label">
+                            <span>Mid (50-74)</span>
+                            <span class="grade-legend-percentage" id="midPercentage">- %0</span>
+                        </div>
+                    </div>
+                    <div class="grade-legend-item">
+                        <div class="grade-legend-dot low"></div>
+                        <div class="grade-legend-label">
+                            <span>Low (&lt;50)</span>
+                            <span class="grade-legend-percentage" id="lowPercentage">- %0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Success Rate Summary Label - Below Chart -->
+        <div class="success-rate-summary" id="successRateSummary">
+            <div class="success-rate-summary-value" id="successPercentage">0%</div>
+            <div class="success-rate-summary-label">Success Rate</div>
+        </div>
+                    </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Set current date and motivation
+    (function() {
+        const dateElement = document.getElementById('currentDate');
+        const motivationElement = document.getElementById('motivationText');
+        
+        if (dateElement) {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateElement.textContent = now.toLocaleDateString('en-US', options);
+        }
+        
+        if (motivationElement) {
+            const motivations = [
+                "Keep up the great work!",
+                "Every student matters.",
+                "You're making a difference.",
+                "Progress over perfection.",
+                "Today is a new opportunity."
+            ];
+            const randomMotivation = motivations[Math.floor(Math.random() * motivations.length)];
+            motivationElement.textContent = randomMotivation;
+        }
+    })();
+
+    // Only initialize charts if there are submissions
+    {% set total_submissions = submissions | length %}
+    {% if total_submissions > 0 %}
+    // Grouped Bar Chart - Student Performance Comparison (Dynamic from Database)
+    const groupedBarCtx = document.getElementById('groupedBarChart');
+    if (groupedBarCtx) {
+        const ctx = groupedBarCtx.getContext('2d');
+        
+        // Get real data from submissions - process in JavaScript for better control
+        {% set all_students_dict = {} %}
+        {% for sub in submissions %}
+            {% set student_id = sub.student_id %}
+            {% if student_id not in all_students_dict %}
+                {% set _ = all_students_dict.update({student_id: sub.student}) %}
+            {% endif %}
+        {% endfor %}
+        
+        // Prepare submission data for processing
+        const submissionData = [
+            {% for sub in submissions %}
+            {
+                studentId: {{ sub.student_id }},
+                studentName: '{{ sub.student.username }}',
+                type: '{{ sub.submission_type }}',
+                score: {{ sub.grade.score if sub.grade else 0 }},
+                pronunciationScore: {{ sub.grade.pronunciation_score if (sub.grade and sub.grade.pronunciation_score) else 0 }},
+                fluencyScore: {{ sub.grade.fluency_score if (sub.grade and sub.grade.fluency_score) else 0 }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        // Get quiz data
+        {% set quiz_data = [] %}
+        {% for sub in submissions %}
+            {% if sub.student.quizzes %}
+                {% for quiz in sub.student.quizzes %}
+                    {% if quiz_data.append({'studentId': sub.student_id, 'score': quiz.score}) %}{% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
+        
+        const quizDataRaw = [
+            {% for quiz in quiz_data %}
+            {
+                studentId: {{ quiz.studentId }},
+                score: {{ quiz.score }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        // Process data: Group by student and calculate averages
+        const studentMap = {};
+        
+        // Process submissions
+        submissionData.forEach(sub => {
+            if (!studentMap[sub.studentId]) {
+                studentMap[sub.studentId] = {
+                    name: sub.studentName,
+                    speaking: [],
+                    text: [],
+                    quiz: 0
+                };
+            }
+            
+            if (sub.type === 'SPEAKING' && sub.score > 0) {
+                const speakingScore = sub.pronunciationScore > 0 ? sub.pronunciationScore : sub.score;
+                studentMap[sub.studentId].speaking.push(speakingScore);
+            } else if (sub.type === 'WRITING' && sub.score > 0) {
+                studentMap[sub.studentId].text.push(sub.score);
+            }
+        });
+        
+        // Process quizzes
+        quizDataRaw.forEach(quiz => {
+            if (studentMap[quiz.studentId]) {
+                studentMap[quiz.studentId].quiz = Math.max(studentMap[quiz.studentId].quiz, quiz.score);
+            }
+        });
+        
+        // Convert to arrays and calculate averages
+        const studentNames = [];
+        const speakingData = [];
+        const quizData = [];
+        const textData = [];
+        
+        Object.values(studentMap).slice(0, 10).forEach(student => {
+            studentNames.push(student.name);
+            
+            // Calculate average speaking score
+            const avgSpeaking = student.speaking.length > 0
+                ? student.speaking.reduce((a, b) => a + b, 0) / student.speaking.length
+                : 0;
+            speakingData.push(Math.round(avgSpeaking * 10) / 10);
+            
+            // Quiz score (max)
+            quizData.push(Math.round(student.quiz * 10) / 10);
+            
+            // Calculate average text score
+            const avgText = student.text.length > 0
+                ? student.text.reduce((a, b) => a + b, 0) / student.text.length
+                : 0;
+            textData.push(Math.round(avgText * 10) / 10);
+        });
+        
+        // Show/hide empty state
+        const emptyState = document.getElementById('performanceEmptyState');
+        const canvas = groupedBarCtx;
+        
+        // Only create chart if we have data
+        if (studentNames.length > 0 && (speakingData.some(v => v > 0) || quizData.some(v => v > 0) || textData.some(v => v > 0))) {
+            // Hide empty state and show canvas
+            if (emptyState) emptyState.style.display = 'none';
+            canvas.style.display = 'block';
+            
+            const groupedBarChart = new Chart(ctx, {
+                type: 'bar',
+        data: { 
+                    labels: studentNames,
+                    datasets: [
+                        {
+                            label: 'Speaking Puanı',
+                            data: speakingData,
+                            backgroundColor: '#005596',  // Blue
+                            borderColor: '#005596',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Quiz Puanı',
+                            data: quizData,
+                            backgroundColor: '#ce0000',  // Red
+                            borderColor: '#ce0000',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Text Puanı',
+                            data: textData,
+                            backgroundColor: '#ff9900',  // Orange/Yellow
+                            borderColor: '#ff9900',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }
+                    ]
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutQuart'
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+            plugins: { 
+                legend: { 
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            boxHeight: 12,
+                            font: { size: 11 },
+                            color: 'var(--text-secondary)',
+                            padding: 12,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                },
+                tooltip: {
+                        backgroundColor: (document.documentElement.getAttribute('data-theme') === 'dark') ? 'rgba(30, 41, 59, 0.95)' : 'rgba(0, 0, 0, 0.9)',
+                        titleColor: 'var(--text-main)',
+                        bodyColor: 'var(--text-secondary)',
+                    padding: 12,
+                        titleFont: { size: 13, weight: '600' },
+                        bodyFont: { size: 12 },
+                    cornerRadius: 8,
+                        displayColors: true,
+                        borderColor: 'var(--border-color)',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y.toFixed(1) + ' / 100';
+                                }
+                                return label;
+                            }
+                        }
+                }
+            },
+            scales: {
+                x: {
+                        stacked: false,
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: 'var(--text-secondary)',
+                            font: { size: 10 },
+                            maxRotation: 45,
+                            minRotation: 0
+                    }
+                },
+                y: {
+                        stacked: false,
+                        min: 0,
+                        max: 100,
+                        beginAtZero: true,
+                    grid: {
+                            color: 'var(--border-color)',
+                            drawBorder: false,
+                            lineWidth: 1
+                    },
+                    ticks: {
+                        color: 'var(--text-secondary)',
+                            font: { size: 11 },
+                            stepSize: 10
+                        }
+                    }
+                },
+                // Transparent background for dark mode compatibility
+                backgroundColor: 'transparent'
+            }
+        });
+        
+            // Store chart instance
+            window.groupedBarChart = groupedBarChart;
+        } else {
+            // No data - show professional empty state
+            const canvas = groupedBarCtx;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Hide canvas and show empty state
+            canvas.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'flex';
+        }
+    }
+
+    // Grade Distribution Chart
+    const distCtx = document.getElementById('distChart');
+    if (distCtx) {
+    
+    // Calculate distribution from submissions
+    {% set high_count = 0 %}
+    {% set mid_count = 0 %}
+    {% set low_count = 0 %}
+    {% for sub in submissions %}
+        {% if sub.grade %}
+            {% if sub.grade.score >= 75 %}
+                {% set high_count = high_count + 1 %}
+            {% elif sub.grade.score >= 50 %}
+                {% set mid_count = mid_count + 1 %}
+            {% else %}
+                {% set low_count = low_count + 1 %}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+    
+        const highCount = {{ high_count | tojson }};
+        const midCount = {{ mid_count | tojson }};
+        const lowCount = {{ low_count | tojson }};
+        const totalGraded = highCount + midCount + lowCount;
+        
+        // Update custom legend values with percentages
+        const highPercentageEl = document.getElementById('highPercentage');
+        const midPercentageEl = document.getElementById('midPercentage');
+        const lowPercentageEl = document.getElementById('lowPercentage');
+        
+        // Calculate percentages from real database data
+        const highPct = totalGraded > 0 ? Math.round((highCount / totalGraded) * 100) : 0;
+        const midPct = totalGraded > 0 ? Math.round((midCount / totalGraded) * 100) : 0;
+        const lowPct = totalGraded > 0 ? Math.round((lowCount / totalGraded) * 100) : 0;
+        
+        if (highPercentageEl) highPercentageEl.textContent = `- %${highPct}`;
+        if (midPercentageEl) midPercentageEl.textContent = `- %${midPct}`;
+        if (lowPercentageEl) lowPercentageEl.textContent = `- %${lowPct}`;
+        
+        // Define colors for each category
+        const gradeColors = {
+            high: '#22c55e',    // Green for High (75+)
+            mid: '#f59e0b',    // Orange/Amber for Mid (50-74)
+            low: '#ef4444',     // Red for Low (<50)
+            empty: '#e5e7eb'    // Gray for no data
+        };
+        
+        // Determine dominant category and calculate percentage
+        let dominantCategory = 'none';
+        let dominantPercentage = 0;
+        let dominantColor = gradeColors.empty;
+        
+        if (totalGraded > 0) {
+            const highPct = (highCount / totalGraded) * 100;
+            const midPct = (midCount / totalGraded) * 100;
+            const lowPct = (lowCount / totalGraded) * 100;
+            
+            if (highCount >= midCount && highCount >= lowCount) {
+                dominantCategory = 'high';
+                dominantPercentage = Math.round(highPct);
+                dominantColor = gradeColors.high;
+            } else if (midCount >= lowCount) {
+                dominantCategory = 'mid';
+                dominantPercentage = Math.round(midPct);
+                dominantColor = gradeColors.mid;
+            } else {
+                dominantCategory = 'low';
+                dominantPercentage = Math.round(lowPct);
+                dominantColor = gradeColors.low;
+            }
+        }
+        
+        // Update success rate summary label below chart
+        const successElement = document.getElementById('successPercentage');
+        if (successElement) {
+            successElement.textContent = totalGraded > 0 ? dominantPercentage + '%' : '0%';
+            successElement.style.color = totalGraded > 0 ? dominantColor : 'var(--text-main)';
+        }
+        
+        // Prepare chart data - show placeholder ring if no data
+        const chartData = totalGraded > 0 ? [highCount, midCount, lowCount] : [100];
+        // Colors: Always use category colors for legend, but show light gray ring if no data
+        const chartColors = totalGraded > 0 
+            ? [gradeColors.high, gradeColors.mid, gradeColors.low]
+            : [gradeColors.empty]; // Single light gray ring for placeholder
+        
+        const distChart = new Chart(distCtx.getContext('2d'), {
+        type: 'doughnut',
+        data: { 
+            labels: totalGraded > 0 ? ['High', 'Mid', 'Low'] : ['High', 'Mid', 'Low'], /* Shorter labels for compact fit */ 
+            datasets: [{ 
+                data: chartData,
+                backgroundColor: chartColors,
+                borderWidth: 0,
+                hoverOffset: 6
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            cutout: '65%',
+            // Transparent background for dark mode compatibility
+            backgroundColor: 'transparent',
+            plugins: { 
+                legend: { 
+                    display: false, /* Hide default legend - using custom HTML legend */
+                    labels: { 
+                        boxWidth: 14, 
+                        boxHeight: 14,
+                        font: { size: 13 }, /* 13px - readable size */
+                        padding: 12, /* Comfortable padding */
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            // Get current theme to set text color - KESIN renk ataması
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                            const textColor = isDark ? '#f8fafc' : '#1e293b'; // Slate 50 in dark mode, Slate 800 in light mode
+                            
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    const dataset = data.datasets[0];
+                                    const value = dataset.data[i];
+                                    // Always use category colors for legend, regardless of data
+                                    const categoryColors = [gradeColors.high, gradeColors.mid, gradeColors.low];
+                                    const legendColor = categoryColors[i];
+                                    
+                                    // Compact label format: "High (5)" instead of "High (75+) (5)"
+                                    let labelText;
+                                    
+                                    if (totalGraded > 0) {
+                                        // Format: "High (5)" - shorter and cleaner
+                                        labelText = `${label} (${value})`;
+                                    } else {
+                                        // No data: show "High (0)"
+                                        labelText = `${label} (0)`;
+                                    }
+                                    
+                                    return {
+                                        text: labelText,
+                                        fillStyle: legendColor,
+                                        strokeStyle: legendColor,
+                                        color: textColor, // KESIN renk ataması - Slate 50 (dark) veya Slate 800 (light)
+                                        font: { 
+                                            size: 13, /* 13px - readable size */
+                                            family: 'inherit',
+                                            weight: 'normal'
+                                        },
+                                        lineWidth: 0,
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    } 
+                },
+                tooltip: {
+                    backgroundColor: (document.documentElement.getAttribute('data-theme') === 'dark') ? 'rgba(30, 41, 59, 0.95)' : 'rgba(0, 0, 0, 0.8)',
+                    titleColor: 'var(--text-main)',
+                    bodyColor: 'var(--text-secondary)',
+                    padding: 12,
+                    titleFont: { size: 14, weight: '600' },
+                    bodyFont: { size: 13 },
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            if (totalGraded === 0) return 'No data';
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const percentage = ((value / totalGraded) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+        });
+
+        // Update legend text color when theme changes - KESIN renk ataması
+        const updateLegendColor = () => {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const textColor = isDark ? '#f8fafc' : '#1e293b'; // Slate 50 (dark) veya Slate 800 (light)
+            
+            // Chart.js legend items güncelle
+            if (distChart && distChart.legend && distChart.legend.legendItems) {
+                distChart.legend.legendItems.forEach(item => {
+                    item.fontColor = textColor;
+                    item.color = textColor; // Ekstra renk ataması
+                });
+                distChart.update('none');
+            }
+            
+            // CSS ile tüm legend text'leri güncelle - BRUTE FORCE
+            const chartCard = document.querySelector('#distChart')?.closest('.chart-card');
+            if (chartCard) {
+                const legendTexts = chartCard.querySelectorAll('.chartjs-legend li, .chartjs-legend-item, .chartjs-legend-item span, .chartjs-legend-item-text');
+                legendTexts.forEach(text => {
+                    text.style.color = textColor;
+                    text.style.fill = textColor; // SVG için
+                });
+                
+                // SVG text elementleri
+                const svgTexts = chartCard.querySelectorAll('text');
+                svgTexts.forEach(text => {
+                    text.setAttribute('fill', textColor);
+                });
+            }
+        };
+
+        // Listen for theme changes
+        const observer = new MutationObserver(updateLegendColor);
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+        });
+
+        // Initial color update
+        setTimeout(updateLegendColor, 100);
+    }
+    {% endif %}
+
+    // Sparkline Charts - Mini Line Graphs (Next to Values)
+    (function() {
+        {% if sparkline_data %}
+        const sparklineData = {{ sparkline_data | tojson }};
+        
+        // Helper function to draw sparkline
+        function drawSparkline(canvasId, data, color) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = 50;
+            const height = canvas.height = 16;
+            
+            // Check if data has variation
+            const hasVariation = data.some((val, i) => i > 0 && val !== data[i - 1]);
+            const allZero = data.every(val => val === 0);
+            
+            if (allZero || !hasVariation) {
+                // Show "Steady" badge instead
+                canvas.style.display = 'none';
+                const badgeId = canvasId.replace('sparkline-', 'sparkline-badge-');
+                const badge = document.getElementById(badgeId);
+                if (badge) {
+                    badge.style.display = 'inline-flex';
+                }
+                return;
+            }
+            
+            // Normalize data to fit canvas height
+            const max = Math.max(...data);
+            const min = Math.min(...data);
+            const range = max - min || 1;
+            const normalized = data.map(val => ((val - min) / range) * (height - 4) + 2);
+            
+            // Draw line
+            ctx.clearRect(0, 0, width, height);
+            ctx.strokeStyle = color || '#6366f1';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            
+            const stepX = (width - 4) / (data.length - 1);
+            for (let i = 0; i < normalized.length; i++) {
+                const x = 2 + i * stepX;
+                const y = height - normalized[i];
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // Draw small circle at the end
+            const lastX = 2 + (normalized.length - 1) * stepX;
+            const lastY = height - normalized[normalized.length - 1];
+            ctx.fillStyle = color || '#6366f1';
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // Draw sparklines for each metric
+        drawSparkline('sparkline-submissions', sparklineData.submissions, '#10b981');
+        drawSparkline('sparkline-pending', sparklineData.pending, '#f59e0b');
+        drawSparkline('sparkline-avg', sparklineData.class_avg, '#6366f1');
+        drawSparkline('sparkline-active', sparklineData.active_students, '#ec4899');
+        {% else %}
+        // No sparkline data - show "Steady" badges
+        ['submissions', 'pending', 'avg', 'active'].forEach(id => {
+            const canvas = document.getElementById('sparkline-' + id);
+            const badge = document.getElementById('sparkline-badge-' + id);
+            if (canvas) canvas.style.display = 'none';
+            if (badge) badge.style.display = 'inline-flex';
+        });
+        {% endif %}
+    })();
+
+</script>
+{% endblock %}

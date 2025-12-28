@@ -1,0 +1,1769 @@
+﻿{% extends "base.html" %}
+
+{% block title %}AAFS AI Performance{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    /* Fixed Layout - Single Screen */
+    .content-wrapper {
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        padding: 48px 32px 24px 32px;  /* Top padding 48px to align with sidebar-top (MAIN line level) */
+    }
+
+    /* Dashboard Container */
+    .dashboard-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        min-height: 0;
+        padding-bottom: 30px;  /* Safe bottom spacing to prevent cutoff */
+    }
+
+    /* Welcome Banner - Compact like Instructor, Aligned with Sidebar MAIN */
+    .welcome-banner {
+        width: 100%;
+        max-width: 100%;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-top: 0;  /* No top margin, aligned with content-wrapper top */
+        margin-bottom: 20px;
+        color: var(--white);
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .welcome-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .welcome-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--white);
+        margin: 0 0 2px 0;
+        letter-spacing: -0.02em;
+    }
+
+    .welcome-subtitle {
+        font-size: 0.8125rem;
+        color: rgba(248, 250, 252, 0.85);
+        margin: 0;
+        line-height: 1.4;
+    }
+
+    .welcome-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+        text-align: right;
+    }
+
+    .welcome-date {
+        font-size: 0.8125rem;
+        color: rgba(248, 250, 252, 0.9);
+        font-weight: 500;
+    }
+
+    .welcome-motivation {
+        font-size: 0.75rem;
+        color: rgba(248, 250, 252, 0.75);
+        font-style: italic;
+    }
+
+    /* High-Density Minimalist Stats (4 compact cards) - Pill-shaped like Instructor */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        border-radius: 50px;
+        padding: 8px 20px 8px 32px !important;
+        padding-top: 8px !important;
+        margin-top: 0 !important;
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 18px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--accent);
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--accent);
+    }
+
+    .stat-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .stat-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    .stat-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(99, 102, 241, 0.12);
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover .stat-icon {
+        background: rgba(99, 102, 241, 0.18);
+        transform: scale(1.05);
+    }
+
+    .stat-icon svg {
+        width: 16px;
+        height: 16px;
+        stroke: #6366f1;
+        stroke-width: 2;
+    }
+
+    /* Icon color variations - matching Instructor page */
+    .stat-card:nth-child(1) .stat-icon {
+        background: rgba(16, 185, 129, 0.12);
+    }
+    .stat-card:nth-child(1) .stat-icon svg {
+        stroke: #10b981;
+    }
+
+    .stat-card:nth-child(2) .stat-icon {
+        background: rgba(245, 158, 11, 0.12);
+    }
+    .stat-card:nth-child(2) .stat-icon svg {
+        stroke: #f59e0b;
+    }
+
+    .stat-card:nth-child(3) .stat-icon {
+        background: rgba(99, 102, 241, 0.12);
+    }
+    .stat-card:nth-child(3) .stat-icon svg {
+        stroke: #6366f1;
+    }
+
+    .stat-card:nth-child(4) .stat-icon {
+        background: rgba(236, 72, 153, 0.12);
+    }
+    .stat-card:nth-child(4) .stat-icon svg {
+        stroke: #ec4899;
+    }
+
+    /* Text content wrapper */
+    .stat-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        flex: 1;
+        min-width: 0;
+        gap: 2px;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1.2;
+    }
+
+    .stat-value {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1;
+        margin: 0 !important;
+        padding: 0 !important;
+        letter-spacing: -0.02em;
+    }
+
+    /* Section Header - Learning Overview */
+    .section-header {
+        margin-top: 40px; /* Push down from stats cards */
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.02em;
+        margin: 0;
+    }
+
+    .section-subtitle {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        font-weight: 400;
+        opacity: 0.7;
+        margin: 0;
+    }
+
+    /* Professional Grid - 2 Column Layout (75% - 25%) */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 3fr 1fr; /* 75% - 25% */
+        gap: 24px;
+        margin-bottom: 30px; /* Safe bottom spacing */
+        flex-shrink: 0;
+    }
+
+    /* Left Column (75%): Score Progress History + Bottom Two Cards */
+    .left-column {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    /* Left Side (Large): Score Progress History */
+    .chart-section {
+        width: 100%;
+    }
+
+    /* Bottom Left: Two Equal Cards Side by Side */
+    .bottom-left-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* Two equal columns */
+        gap: 24px; /* Consistent gap */
+        width: 100%;
+        align-items: stretch; /* Equal height */
+    }
+
+    .deadlines-section,
+    .recent-section-wrapper {
+        width: 100%;
+    }
+
+    /* Right Column (25%): Recommended Next Step + Learning Progress */
+    .right-column {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    /* Right Side: Recommended Next Step */
+    .recommended-section {
+        width: 100%;
+    }
+
+    /* Learning Progress & Streak */
+    .progress-section-wrapper {
+        width: 100%;
+        height: 100%; /* Match Recent Activity History height */
+    }
+
+    .progress-section {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* General Card Styling */
+    .glass-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 16px;  /* Restored to comfortable size */
+        padding-bottom: 20px;  /* Comfortable bottom padding */
+        border: 1px solid var(--border-color);
+        border-bottom: 2px solid var(--border-color);  /* More prominent bottom border */
+        transition: all 0.2s ease;
+        height: 100%;
+        max-height: 100%;  /* Prevent overflow */
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;  /* Ensure all cards align at bottom */
+        box-shadow: var(--shadow-sm);  /* Subtle shadow for depth */
+        overflow: hidden;  /* Prevent content overflow */
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;  /* Reduced for compact cards */
+        flex-shrink: 0;  /* Prevent header from shrinking */
+    }
+
+    /* Chart Section Header - Special layout for legend */
+    .chart-section .card-header {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .card-title {
+        font-size: 0.875rem; /* Smaller - 14px */
+        font-weight: 600;
+        color: var(--text-main);
+        letter-spacing: -0.01em;
+    }
+
+    /* Chart Box - Fixed Height */
+    .chart-box {
+        height: 100%;
+        position: relative;
+        flex: 1;
+        min-height: 240px;  /* Minimum height for chart visibility */
+        padding-top: 0;  /* Remove top padding to prevent legend overlap */
+    }
+
+    /* Custom Legend Position - Outside Chart Area (Card Header) */
+    .chart-legend-custom {
+        display: flex;
+        flex-direction: row;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-main);
+        white-space: nowrap;
+    }
+
+    .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    /* Recommended Next Step Card - Premium Action Card */
+    .recommended-section .glass-card {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.03) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.15);
+        position: relative;
+        overflow: hidden;
+        flex: 0 0 auto; /* Don't grow, allow Upcoming Deadlines below */
+    }
+
+    .recommended-section .glass-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.05) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .recommended-section .glass-card:hover::before {
+        opacity: 1;
+    }
+
+    .recommended-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 10px 0;  /* Further reduced for compactness */
+        position: relative;
+        z-index: 1;
+        min-height: 0;
+    }
+
+    .recommended-icon {
+        width: 36px;  /* Reduced from 48px (25% smaller) */
+        height: 36px;  /* Reduced from 48px */
+        margin-bottom: 10px;  /* Reduced from 16px */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        border-radius: 10px;  /* Reduced from 12px */
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .recommended-icon svg {
+        width: 18px;  /* Reduced from 24px */
+        height: 18px;  /* Reduced from 24px */
+        stroke-width: 2.5;
+        stroke: currentColor;
+        fill: currentColor;
+    }
+
+    .recommended-text {
+        font-size: 1rem;  /* Reduced from 1.125rem */
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 6px;  /* Reduced from 8px */
+        letter-spacing: -0.01em;
+    }
+
+    .recommended-subtext {
+        font-size: 0.8125rem;  /* Reduced from 0.875rem */
+        color: var(--text-secondary);
+        margin-bottom: 16px;  /* Reduced from 24px */
+        line-height: 1.4;  /* Reduced from 1.5 */
+        max-width: 200px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: var(--white);
+        padding: 10px 20px;  /* Reduced from 14px 28px */
+        border-radius: 10px;  /* Reduced from 12px */
+        font-weight: 700;
+        font-size: 0.875rem;  /* Reduced from 0.9375rem */
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;  /* Reduced from 8px */
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-primary::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-primary:hover::before {
+        left: 100%;
+    }
+
+    /* Empty State - Professional & Compact */
+    .empty-state {
+        text-align: center;
+        padding: 32px 16px;
+        color: var(--text-secondary);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .empty-state-icon {
+        width: 24px;
+        height: 24px;
+        margin-bottom: 12px;
+        opacity: 0.4;
+        color: var(--text-secondary);
+    }
+
+    .empty-state-icon svg {
+        width: 24px;
+        height: 24px;
+        stroke-width: 2;
+    }
+
+    .empty-state-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 4px;
+    }
+
+    .empty-state-text {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    /* AI Performance Insights Card */
+    .insights-section .glass-card {
+        overflow: hidden;  /* Prevent content from overflowing */
+        max-height: 100%;  /* Fixed height constraint */
+    }
+
+    .insights-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;  /* Changed from center to flex-start */
+        gap: 16px;  /* Comfortable gap */
+        padding: 12px 0 18px 0;  /* Comfortable padding */
+        min-height: 0;
+        overflow-y: auto;  /* Add scroll if content doesn't fit */
+        max-height: 100%;  /* Fixed height constraint */
+    }
+
+    .insight-item {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;  /* Comfortable gap */
+        flex-shrink: 0;  /* Prevent items from shrinking */
+    }
+
+    .insight-label {
+        font-size: 0.75rem;  /* Restored to readable size */
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        line-height: 1.4;  /* Comfortable line height */
+    }
+
+    .insight-value {
+        font-size: 1rem;  /* Restored to readable size */
+        font-weight: 700;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 8px;  /* Comfortable gap */
+        line-height: 1.4;  /* Comfortable line height */
+    }
+
+    .insight-progress {
+        width: 100%;
+        height: 8px;
+        background: var(--border-color);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 4px;
+    }
+
+    .insight-progress-bar {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .insight-progress-bar.strongest {
+        background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+    }
+
+    .insight-progress-bar.weakest {
+        background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+    }
+
+    .insight-icon {
+        width: 20px;  /* Restored to comfortable size */
+        height: 20px;  /* Restored to comfortable size */
+        flex-shrink: 0;
+    }
+
+    .insight-icon svg {
+        width: 20px;  /* Restored to comfortable size */
+        height: 20px;  /* Restored to comfortable size */
+        stroke-width: 2;
+    }
+
+    /* Bottom Grid - Removed (no longer needed) */
+
+    /* Recent Activity History - Compact Sweet Design */
+    .recent-section {
+        background: var(--card-bg);
+        border-radius: 24px; /* Slightly smaller */
+        padding: 12px; /* Further reduced */
+        border: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm); /* Very light shadow */
+        height: 100%; /* Full height to match other cards */
+        width: 100%; /* Full width */
+    }
+
+    /* Dark Mode - Recent Section */
+    [data-theme="dark"] .recent-section {
+        background: #1e293b; /* Slate 800 */
+    }
+
+    .recent-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;  /* Further reduced */
+    }
+
+    .recent-title {
+        font-size: 0.75rem; /* Smaller - 12px */
+        font-weight: 600;
+        color: var(--text-main);
+        letter-spacing: -0.01em;
+    }
+
+    [data-theme="dark"] .recent-title {
+        color: #e2e8f0 !important; /* text-slate-200 */
+    }
+
+    .recent-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px; /* Even smaller gap */
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
+        max-height: 100%;
+        padding-right: 4px;
+        padding-bottom: 4px;
+    }
+
+    /* Custom Scrollbar for Recent Activity */
+    .recent-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .recent-list::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .recent-list::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 3px;
+    }
+
+    .recent-list::-webkit-scrollbar-thumb:hover {
+        background: var(--text-secondary);
+    }
+
+    .recent-item {
+        padding: 4px 0; /* Very compact */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+        gap: 8px;
+    }
+
+    .recent-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .recent-info {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 6px; /* Smaller gap */
+        min-width: 0; /* Allow text truncation */
+    }
+
+    .recent-icon {
+        width: 24px; /* Even smaller */
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(99, 102, 241, 0.1); /* bg-indigo-50 equivalent - pastel */
+    }
+
+    .recent-icon.speaking {
+        background: rgba(99, 102, 241, 0.1); /* Indigo pastel */
+    }
+
+    .recent-icon.writing {
+        background: rgba(168, 85, 247, 0.1); /* Purple pastel */
+    }
+
+    .recent-icon.handwritten {
+        background: rgba(34, 197, 94, 0.1); /* Green pastel */
+    }
+
+    .recent-icon svg {
+        width: 12px; /* Very small icon */
+        height: 12px;
+        stroke-width: 2;
+        color: var(--accent);
+    }
+
+    [data-theme="dark"] .recent-icon svg {
+        color: #818cf8; /* Indigo 400 in dark mode */
+    }
+
+    .recent-details {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px; /* Tighter gap */
+    }
+
+    .recent-type {
+        font-weight: 600;
+        font-size: 0.625rem; /* Smaller - 10px */
+        color: var(--text-main);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    [data-theme="dark"] .recent-type {
+        color: #e2e8f0 !important; /* text-slate-200 */
+    }
+        color: var(--text-main);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 2px;
+    }
+
+    .recent-date {
+        font-size: 0.5625rem; /* Very small - 9px */
+        color: var(--text-secondary);
+    }
+
+    [data-theme="dark"] .recent-date {
+        color: #94a3b8 !important; /* Slate 400 in dark mode */
+    }
+
+    /* Pill-Shaped Badges */
+    .recent-badges {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .recent-score-badge {
+        padding: 2px 6px; /* Very small padding */
+        border-radius: 50px; /* pill-shaped */
+        font-size: 0.625rem; /* Smaller - 10px */
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .recent-score-badge.high {
+        background: rgba(34, 197, 94, 0.15); /* Green pastel */
+        color: #16a34a; /* Green text */
+    }
+
+    .recent-score-badge.mid {
+        background: rgba(245, 158, 11, 0.15); /* Orange pastel */
+        color: #d97706; /* Orange text */
+    }
+
+    .recent-score-badge.low {
+        background: rgba(239, 68, 68, 0.15); /* Red pastel */
+        color: #dc2626; /* Red text */
+    }
+
+    [data-theme="dark"] .recent-score-badge.high {
+        background: rgba(34, 197, 94, 0.2);
+        color: #4ade80; /* Lighter green in dark mode */
+    }
+
+    [data-theme="dark"] .recent-score-badge.mid {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fbbf24; /* Lighter orange in dark mode */
+    }
+
+    [data-theme="dark"] .recent-score-badge.low {
+        background: rgba(239, 68, 68, 0.2);
+        color: #f87171; /* Lighter red in dark mode */
+    }
+
+    .recent-type-badge {
+        padding: 2px 6px; /* Very small padding */
+        border-radius: 50px; /* pill-shaped */
+        font-size: 0.5625rem; /* Smaller - 9px */
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: rgba(99, 102, 241, 0.1); /* Indigo pastel */
+        color: var(--accent);
+        white-space: nowrap;
+    }
+
+    [data-theme="dark"] .recent-type-badge {
+        background: rgba(129, 140, 248, 0.15);
+        color: #818cf8; /* Indigo 400 in dark mode */
+    }
+
+    /* View All History Link */
+    .view-all-link {
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px solid var(--border-color);
+        text-align: center;
+    }
+
+    .view-all-link a {
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 0.6875rem; /* Smaller - 11px */
+        font-weight: 500;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .view-all-link a:hover {
+        color: var(--accent-hover);
+        text-decoration: underline;
+    }
+
+    /* Upcoming Deadlines Card - Compact List */
+    .deadlines-card {
+        border-radius: 24px; /* Matches progress card */
+        padding: 12px; /* Matches progress card */
+        box-shadow: var(--shadow-sm);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .deadlines-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+        min-height: 0;
+    }
+
+    /* Empty State for Deadlines - Centered like Recent Activity */
+    .deadlines-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        flex: 1;
+        padding: 32px 16px;
+        gap: 8px; /* gap-2 equivalent */
+    }
+
+    .deadline-empty-icon {
+        width: 24px; /* Match Recent Activity icon size */
+        height: 24px;
+        margin-bottom: 0;
+        opacity: 0.4;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .deadline-empty-icon svg {
+        width: 24px;
+        height: 24px;
+        stroke-width: 2;
+        stroke: currentColor; /* Use parent color for consistency */
+    }
+
+    .deadline-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0;
+    }
+
+    .deadline-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--accent);
+        flex-shrink: 0;
+    }
+
+    .deadline-icon svg {
+        width: 18px;
+        height: 18px;
+        stroke-width: 2;
+    }
+
+    .deadline-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .deadline-title {
+        font-size: 0.875rem; /* Match empty-state-title */
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 4px; /* Match empty-state gap */
+    }
+
+    .deadline-date {
+        font-size: 0.8125rem; /* Match empty-state-text */
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    /* Dark Mode - Deadlines */
+    [data-theme="dark"] .deadlines-card {
+        background: #1e293b; /* Slate 800 */
+    }
+
+    [data-theme="dark"] .deadline-icon {
+        background: rgba(129, 140, 248, 0.15);
+        color: #818cf8; /* Indigo 400 */
+    }
+
+    /* Learning Progress & Streak Card */
+    .progress-card {
+        border-radius: 24px; /* rounded-3xl - matches other cards */
+        padding: 12px; /* Matches deadlines card */
+        box-shadow: var(--shadow-sm); /* Standard shadow */
+        height: 100%; /* Match Recent Activity History height */
+        display: flex;
+        flex-direction: column;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+    }
+
+    .progress-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center; /* Perfect vertical centering */
+        gap: 16px; /* Tighter gap for compact look */
+        padding: 8px 0;
+        flex: 1;
+        min-height: 0;
+    }
+
+    /* Circular Progress for Weekly Goal */
+    .circular-progress-wrapper {
+        position: relative;
+        width: 90px; /* Slightly smaller for compactness */
+        height: 90px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+    }
+
+    .circular-progress {
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+    }
+
+    /* Progress circle - Indigo-600 color */
+    .circular-progress circle[stroke*="progressGradient"] {
+        stroke: #4f46e5; /* indigo-600 */
+    }
+
+    .circular-progress-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .circular-progress-value {
+        font-size: 0.75rem; /* Smaller for compact card */
+        font-weight: 700;
+        color: var(--text-main);
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    /* Streak Badge with Flame Icon */
+    .streak-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: rgba(245, 158, 11, 0.1);
+        border-radius: 50px;
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        position: relative;
+    }
+
+    .streak-flame-icon {
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #f59e0b;
+        flex-shrink: 0;
+        filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6)) drop-shadow(0 0 8px rgba(245, 158, 11, 0.4)); /* Enhanced glow effect */
+        animation: flame-glow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes flame-glow {
+        0% {
+            filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6)) drop-shadow(0 0 8px rgba(245, 158, 11, 0.4));
+        }
+        100% {
+            filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8)) drop-shadow(0 0 12px rgba(245, 158, 11, 0.6));
+        }
+    }
+
+    .streak-flame-icon svg {
+        width: 100%;
+        height: 100%;
+    }
+
+    .streak-badge-text {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+    }
+
+    .streak-badge-value {
+        font-size: 0.75rem; /* Smaller */
+        font-weight: 700;
+        color: var(--text-main);
+        line-height: 1;
+    }
+
+    .streak-badge-label {
+        font-size: 0.5625rem; /* Smaller - 9px */
+        color: var(--text-secondary);
+        line-height: 1;
+        margin-top: 1px;
+    }
+
+    /* Dark Mode - Progress Card */
+    [data-theme="dark"] .progress-card {
+        background: #1e293b; /* Slate 800 */
+    }
+
+    [data-theme="dark"] .streak-badge {
+        background: rgba(245, 158, 11, 0.15);
+        border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    [data-theme="dark"] .streak-flame-icon {
+        color: #fbbf24; /* Lighter orange in dark mode */
+        filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.7)) drop-shadow(0 0 8px rgba(251, 191, 36, 0.5));
+        animation: flame-glow-dark 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes flame-glow-dark {
+        0% {
+            filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.7)) drop-shadow(0 0 8px rgba(251, 191, 36, 0.5));
+        }
+        100% {
+            filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.9)) drop-shadow(0 0 12px rgba(251, 191, 36, 0.7));
+        }
+    }
+
+    [data-theme="dark"] .view-all-link a {
+        color: #818cf8 !important; /* Indigo 400 in dark mode */
+    }
+
+    [data-theme="dark"] .view-all-link {
+        border-top-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+        .content-wrapper {
+            padding: 20px 24px;
+        }
+
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto;
+            gap: 16px;
+        }
+
+        .chart-section,
+        .recent-section-wrapper,
+        .recommended-section,
+        .deadlines-section,
+        .progress-section-wrapper,
+        .progress-section,
+        .insights-section {
+            grid-column: 1;
+            grid-row: auto;
+        }
+
+        .bottom-three-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .chart-legend-custom {
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .content-wrapper {
+            padding: 16px;
+            height: 100vh;
+        }
+
+        .welcome-banner {
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .welcome-title {
+            font-size: 1.25rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .chart-section,
+        .recommended-section {
+            grid-column: span 1;
+        }
+
+        .chart-box {
+            height: 240px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+<!-- Welcome Banner - Compact with Date -->
+<div class="welcome-banner">
+    <div class="welcome-content">
+        <h1 class="welcome-title">Hello, {{ user.username }}! 👋</h1>
+        <p class="welcome-subtitle">Ready to continue your AI-powered learning journey? You have {{ pending_count }} pending task{{ 's' if pending_count != 1 else '' }}.</p>
+    </div>
+    <div class="welcome-meta">
+        <div class="welcome-date" id="currentDate"></div>
+        <div class="welcome-motivation" id="motivationText"></div>
+    </div>
+</div>
+
+<!-- High-Density Minimalist Stats (4 compact cards) -->
+<div class="stats-grid">
+    <!-- Total Submissions -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+            </div>
+        </div>
+        <div class="stat-content">
+            <span class="stat-label">TOTAL SUBMISSIONS</span>
+            <div class="stat-value">{{ total_submissions }}</div>
+        </div>
+    </div>
+
+    <!-- Average Score -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+            </div>
+        </div>
+        <div class="stat-content">
+            <span class="stat-label">AVERAGE SCORE</span>
+            <div class="stat-value">{{ average_score }}<span style="font-size: 0.875rem; color: var(--text-secondary); margin-left: 2px;">%</span></div>
+        </div>
+    </div>
+
+    <!-- Speaking Score -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+            </div>
+        </div>
+        <div class="stat-content">
+            <span class="stat-label">SPEAKING SCORE</span>
+            <div class="stat-value">{{ speaking_score }}<span style="font-size: 0.875rem; color: var(--text-secondary); margin-left: 2px;">%</span></div>
+        </div>
+    </div>
+
+    <!-- Writing Score -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+            </div>
+        </div>
+        <div class="stat-content">
+            <span class="stat-label">WRITING SCORE</span>
+            <div class="stat-value">{{ writing_score }}<span style="font-size: 0.875rem; color: var(--text-secondary); margin-left: 2px;">%</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- Section Header - Learning Overview -->
+<div class="section-header">
+    <div>
+        <h2 class="section-title">Learning Overview</h2>
+        <p class="section-subtitle" id="motivationalMessage">You are doing great today! Keep up the momentum.</p>
+    </div>
+</div>
+
+<!-- Professional Grid - 2 Column Layout (75% - 25%) -->
+<div class="dashboard-grid">
+    <!-- Left Column (75%): Score Progress History + Bottom Two Cards -->
+    <div class="left-column">
+        <!-- Score Progress History -->
+        <div class="chart-section">
+            <div class="glass-card">
+                <div class="card-header">
+                    <h3 class="card-title">Score Progress History</h3>
+                    <!-- Custom Legend - Outside Chart Area -->
+                    <div class="chart-legend-custom" id="chartLegend">
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #3b82f6;"></div>
+                            <span>Speaking</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #a855f7;"></div>
+                            <span>Writing</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #f97316;"></div>
+                            <span>Quiz</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #22c55e;"></div>
+                            <span>Handwritten</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <canvas id="scoreChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Left: Two Equal Cards Side by Side -->
+        <div class="bottom-left-grid">
+            <!-- Upcoming Deadlines - Left -->
+            <div class="deadlines-section">
+                <div class="glass-card deadlines-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Upcoming Deadlines</h3>
+                    </div>
+                    <div class="deadlines-list">
+                        <!-- Empty State - Centered like Recent Activity -->
+                        <div class="deadlines-empty-state">
+                            <div class="deadline-empty-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                            </div>
+                            <div class="deadline-title">No upcoming deadlines</div>
+                            <div class="deadline-date">All assignments completed</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity History - Right -->
+            <div class="recent-section-wrapper">
+                <div class="recent-section">
+                    <div class="recent-header">
+                        <h3 class="recent-title">Recent Activity History</h3>
+                    </div>
+                    {% if submissions %}
+                    <div class="recent-list">
+                        {% for sub in submissions[-1:]|reverse %}
+                        {% if sub.grade %}
+                        <div class="recent-item">
+                            <div class="recent-info">
+                                {% if sub.submission_type == 'SPEAKING' %}
+                                <div class="recent-icon speaking">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                                    </svg>
+                                </div>
+                                {% elif sub.submission_type == 'WRITING' %}
+                                <div class="recent-icon writing">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                </div>
+                                {% else %}
+                                <div class="recent-icon handwritten">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                    </svg>
+                                </div>
+                                {% endif %}
+                                <div class="recent-details">
+                                    <div class="recent-type-badge">{{ sub.submission_type }}</div>
+                                    <div class="recent-date">{{ sub.created_at.strftime('%b %d, %Y') }}</div>
+                                </div>
+                            </div>
+                            <div class="recent-badges">
+                                {% set score = sub.grade.score %}
+                                {% if score >= 75 %}
+                                <span class="recent-score-badge high">{{ score }}%</span>
+                                {% elif score >= 50 %}
+                                <span class="recent-score-badge mid">{{ score }}%</span>
+                                {% else %}
+                                <span class="recent-score-badge low">{{ score }}%</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="view-all-link">
+                        <a href="/history">View All History →</a>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                            </svg>
+                        </div>
+                        <div class="empty-state-title">No activity yet</div>
+                        <div class="empty-state-text">Submit your first assignment to see activity history</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column (25%): Recommended Next Step + Learning Progress -->
+    <div class="right-column">
+        <!-- Recommended Next Step -->
+        <div class="recommended-section">
+            <div class="glass-card">
+                <div class="card-header">
+                    <h3 class="card-title">Recommended Next Step</h3>
+                </div>
+                <div class="recommended-content">
+                    <div class="recommended-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor" opacity="0.9"/>
+                            <circle cx="12" cy="12" r="3" fill="white" opacity="0.8"/>
+                        </svg>
+                    </div>
+                    <div class="recommended-text">{{ recommended_next }}</div>
+                    <div class="recommended-subtext">Continue your learning journey with personalized recommendations</div>
+                    <a href="{{ recommended_link }}" class="btn-primary">Get Started →</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Learning Progress & Streak -->
+        <div class="progress-section-wrapper">
+            <div class="progress-section">
+                <div class="glass-card progress-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Learning Progress & Streak</h3>
+                    </div>
+                    <div class="progress-content">
+                        <!-- Circular Progress for Weekly Goal -->
+                        <div class="circular-progress-wrapper">
+                            <svg class="circular-progress" viewBox="0 0 100 100">
+                                <!-- Background circle -->
+                                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--border-color)" stroke-width="8"/>
+                                <!-- Progress circle - Indigo-600 -->
+                                <circle id="progressCircle" cx="50" cy="50" r="42" fill="none" stroke="#4f46e5" stroke-width="8" 
+                                        stroke-linecap="round" stroke-dasharray="263.9" 
+                                        stroke-dashoffset="263.9"
+                                        transform="rotate(-90 50 50)"/>
+                            </svg>
+                            <div class="circular-progress-center">
+                                <div class="circular-progress-value">{{ weekly_goal_current }} / {{ weekly_goal_target }}</div>
+                            </div>
+                        </div>
+                        <!-- Streak Badge with Flame Icon -->
+                        <div class="streak-badge">
+                            <div class="streak-flame-icon">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="streak-badge-text">
+                                <span class="streak-badge-value">{{ current_streak }}</span>
+                                <span class="streak-badge-label">Days Streak</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Set current date and motivation (matching Instructor page)
+    (function() {
+        const dateElement = document.getElementById('currentDate');
+        const motivationElement = document.getElementById('motivationText');
+        
+        if (dateElement) {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateElement.textContent = now.toLocaleDateString('en-US', options);
+        }
+        
+        if (motivationElement) {
+            const motivations = [
+                "Keep up the great work!",
+                "Every step counts.",
+                "You're making progress.",
+                "Stay motivated!",
+                "Today is a new opportunity."
+            ];
+            const randomMotivation = motivations[Math.floor(Math.random() * motivations.length)];
+            motivationElement.textContent = randomMotivation;
+        }
+
+        // Set motivational message for section header
+        const motivationalMessage = document.getElementById('motivationalMessage');
+        if (motivationalMessage) {
+            const messages = [
+                "You are doing great today! Keep up the momentum.",
+                "Your progress is impressive! Keep pushing forward.",
+                "Every submission brings you closer to your goals.",
+                "You're on fire! Maintain this energy.",
+                "Outstanding work! Continue this excellent pace."
+            ];
+            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+            motivationalMessage.textContent = randomMessage;
+        }
+    })();
+
+    // Circular Progress Animation with Success State
+    (function() {
+        const progressCircle = document.getElementById('progressCircle');
+        const progressGradient = document.getElementById('progressGradientWeekly');
+        if (progressCircle) {
+            const percentage = {{ weekly_goal_percentage }};
+            const current = {{ weekly_goal_current }};
+            const target = {{ weekly_goal_target }};
+            const circumference = 2 * Math.PI * 42; // radius = 42
+            const offset = circumference * (1 - Math.min(percentage / 100, 1)); // Cap at 100%
+            progressCircle.style.strokeDashoffset = offset;
+            // Add smooth transition
+            progressCircle.style.transition = 'stroke-dashoffset 0.8s ease-in-out';
+            
+            // Success State: Change color if goal is exceeded
+            if (current >= target && progressGradient) {
+                // Goal exceeded - use gold/green gradient
+                const stop1 = progressGradient.querySelector('stop[offset="0%"]');
+                const stop2 = progressGradient.querySelector('stop[offset="100%"]');
+                if (stop1 && stop2) {
+                    stop1.setAttribute('style', 'stop-color:#fbbf24;stop-opacity:1'); // Amber 400
+                    stop2.setAttribute('style', 'stop-color:#22c55e;stop-opacity:1'); // Green 500
+                }
+                // Add glow effect
+                progressCircle.style.filter = 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.6))';
+            } else if (percentage >= 100) {
+                // Goal reached exactly - use green gradient
+                const stop1 = progressGradient.querySelector('stop[offset="0%"]');
+                const stop2 = progressGradient.querySelector('stop[offset="100%"]');
+                if (stop1 && stop2) {
+                    stop1.setAttribute('style', 'stop-color:#22c55e;stop-opacity:1'); // Green 500
+                    stop2.setAttribute('style', 'stop-color:#16a34a;stop-opacity:1'); // Green 600
+                }
+                progressCircle.style.filter = 'drop-shadow(0 0 6px rgba(34, 197, 94, 0.5))';
+            }
+        }
+    })();
+
+    // Multi-Line Spline Chart - Score Progress History
+    (function() {
+        const chartCanvas = document.getElementById('scoreChart');
+        if (!chartCanvas) return;
+
+        // Get data from backend
+        let chartLabels = [];
+        let speakingData = [];
+        let writingData = [];
+        let quizData = [];
+        let handwrittenData = [];
+
+        {% if chart_data and chart_data.dates %}
+        chartLabels = {{ chart_data.dates | tojson }};
+        speakingData = {{ chart_data.speaking_scores | tojson }};
+        writingData = {{ chart_data.writing_scores | tojson }};
+        quizData = {{ chart_data.quiz_scores | tojson }};
+        handwrittenData = {{ chart_data.handwritten_scores | tojson }};
+        {% endif %}
+
+        // Convert data to numbers and handle null/undefined values
+        const convertToNumber = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return 0;
+            }
+            const num = Number(value);
+            return isNaN(num) ? 0 : num;
+        };
+
+        speakingData = speakingData.map(convertToNumber);
+        writingData = writingData.map(convertToNumber);
+        quizData = quizData.map(convertToNumber);
+        handwrittenData = handwrittenData.map(convertToNumber);
+
+        // Check if all data is zero
+        const allZero = speakingData.every(v => v === 0) && 
+                       writingData.every(v => v === 0) && 
+                       quizData.every(v => v === 0) &&
+                       handwrittenData.every(v => v === 0);
+
+        // Create the multi-line chart
+        const ctx = chartCanvas.getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [
+                    {
+                        label: 'Speaking Scores',
+                        data: speakingData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#3b82f6',
+                        pointBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg') || '#1e293b',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#3b82f6',
+                        pointHoverBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg') || '#1e293b',
+                        pointHoverBorderWidth: 2,
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Writing/Text Scores',
+                        data: writingData,
+                        borderColor: '#a855f7',
+                        backgroundColor: 'rgba(168, 85, 247, 0.15)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#a855f7',
+                        pointBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg') || '#1e293b',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#a855f7',
+                        pointHoverBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg') || '#1e293b',
+                        pointHoverBorderWidth: 2,
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Quiz Scores',
+                        data: quizData,
+                        borderColor: '#f97316',
+                        backgroundColor: 'rgba(249, 115, 22, 0.15)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#f97316',
+                        pointBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg') || '#1e293b',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#f97316',
+                        pointHoverBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg') || '#1e293b',
+                        pointHoverBorderWidth: 2,
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Handwritten Scores',
+                        data: handwrittenData,
+                        borderColor: '#22c55e',
+                        backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#22c55e',
+                        pointBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg') || '#1e293b',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#22c55e',
+                        pointHoverBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg') || '#1e293b',
+                        pointHoverBorderWidth: 2,
+                        spanGaps: true
+                    }
+                ]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                // Transparent background for dark mode compatibility
+                backgroundColor: 'transparent',
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: { 
+                    legend: { 
+                        display: false  // Hide default legend, using custom legend instead
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: (document.documentElement.getAttribute('data-theme') === 'dark') ? 'rgba(30, 41, 59, 0.95)' : 'rgba(15, 23, 42, 0.95)',
+                        titleColor: 'var(--text-main)',
+                        bodyColor: 'var(--text-secondary)',
+                        padding: 12,
+                        titleFont: { size: 13, weight: '600' },
+                        bodyFont: { size: 12 },
+                        cornerRadius: 8,
+                        displayColors: true,
+                        borderColor: 'var(--border-color)',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                if (context.parsed.y === null) {
+                                    return context.dataset.label + ': No data';
+                                }
+                                return context.dataset.label + ': ' + context.parsed.y + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        min: 0,
+                        max: 100,
+                        grid: {
+                            display: true,
+                            color: 'var(--border-color)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            display: true,
+                            color: 'var(--text-secondary)',
+                            font: { size: 11 },
+                            padding: 8,
+                            stepSize: allZero ? 20 : undefined,
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: false
+                        },
+                        ticks: {
+                            display: true,
+                            color: 'var(--text-secondary)',
+                            font: { size: 11 },
+                            padding: 8
+                        }
+                    }
+                }
+            }
+        });
+    })();
+</script>
+{% endblock %}

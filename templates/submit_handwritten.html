@@ -1,0 +1,1022 @@
+﻿{% extends "base.html" %}
+
+{% block title %}OCR AI Analysis - AAFS AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Page Background */
+    body {
+        background-color: var(--bg-primary);
+    }
+
+    /* Main Content Area */
+    .content-wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--bg-primary);
+    }
+
+    /* Main Container - 2 Column Layout */
+    .ocr-container {
+        display: grid;
+        grid-template-columns: 40% 60%;
+        gap: 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+        padding: 0 20px;
+        box-sizing: border-box;
+        flex: 1;
+    }
+
+    /* Empty State - Full Height Container with Vertical Centering */
+    .ocr-container:not(.has-content) {
+        max-width: 1000px;
+        min-height: calc(100vh - 120px);
+        display: grid;
+        grid-template-columns: 40% 60%;
+        grid-template-rows: 1fr auto;
+        gap: 24px;
+        align-content: center;
+        padding-top: 0;
+        padding-bottom: 0;
+        position: relative;
+        flex: 1;
+    }
+
+    /* File Uploaded State - Add Top Padding */
+    .ocr-container.has-content {
+        max-width: 1200px;
+        padding-top: 40px;
+        padding-bottom: 40px;
+        display: grid;
+        justify-content: flex-start;
+        align-items: stretch;
+    }
+
+    /* Left Column - File Upload & Preview (40%) */
+    .upload-section {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        min-height: 500px;
+        height: 100%;
+    }
+
+    /* Empty State - Drag & Drop Zone */
+    .upload-zone {
+        background: var(--card-bg);
+        border: 2px dashed var(--border-color);
+        border-radius: 16px;
+        padding: 80px 40px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        min-height: 500px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-sm);
+        flex: 1;
+    }
+
+    /* Compact Upload Zone - After File Upload */
+    .upload-zone.compact {
+        min-height: auto;
+        height: auto;
+        max-height: 90px;
+        padding: 16px 20px;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        flex: 0 0 auto;
+        display: none;
+        background: var(--card-bg);
+        border: 1px dashed var(--border-color);
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .upload-zone.compact.active {
+        display: flex;
+    }
+
+    .upload-zone.compact:hover {
+        border-color: var(--accent);
+        background: rgba(99, 102, 241, 0.02);
+    }
+
+    .upload-zone.compact.dragover {
+        border-color: var(--accent);
+        background: rgba(99, 102, 241, 0.05);
+    }
+
+    .upload-zone.compact .upload-icon {
+        width: 24px;
+        height: 24px;
+        margin: 0;
+        flex-shrink: 0;
+    }
+
+    .upload-zone.compact .upload-icon svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .upload-zone.compact .upload-title,
+    .upload-zone.compact .upload-subtitle,
+    .upload-zone.compact .upload-formats {
+        display: none;
+    }
+
+    .upload-zone.compact .upload-text {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin: 0;
+        font-weight: 500;
+    }
+
+    .upload-zone:hover {
+        border-color: var(--accent);
+        background: rgba(99, 102, 241, 0.02);
+        box-shadow: var(--shadow-md);
+    }
+
+    .upload-zone.dragover {
+        border-color: var(--accent);
+        background: rgba(99, 102, 241, 0.05);
+        transform: scale(1.01);
+    }
+
+    .upload-icon {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 32px;
+        color: var(--accent);
+        opacity: 0.7;
+        flex-shrink: 0;
+    }
+
+    .upload-icon svg {
+        width: 120px;
+        height: 120px;
+        stroke-width: 1.5;
+    }
+
+    .upload-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin: 0 0 12px 0;
+        letter-spacing: -0.01em;
+    }
+
+    .upload-subtitle {
+        font-size: 0.9375rem;
+        color: var(--text-secondary);
+        margin: 0 0 8px 0;
+        line-height: 1.5;
+    }
+
+    .upload-formats {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        opacity: 0.7;
+        margin: 0;
+    }
+
+    .file-input {
+        display: none;
+    }
+
+    /* Loaded State - File Info Card */
+    .file-info-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 16px 20px;
+        box-shadow: var(--shadow-sm);
+        display: none;
+        flex: 0 0 auto;
+    }
+
+    .file-info-card.active {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .file-info-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        margin: 0;
+    }
+
+    .file-info-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .file-icon-wrapper {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: rgba(99, 102, 241, 0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .file-icon-wrapper svg {
+        width: 20px;
+        height: 20px;
+        color: var(--accent);
+        stroke-width: 2;
+    }
+
+    .file-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .file-name {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin: 0;
+        word-break: break-word;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .file-meta {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+
+    .file-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background: transparent;
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: rgba(99, 102, 241, 0.05);
+    }
+
+    .btn-icon svg {
+        width: 18px;
+        height: 18px;
+        stroke-width: 2;
+    }
+
+    /* Image Preview */
+    .image-preview-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        display: none;
+        flex: 1;
+        min-height: 0;
+        flex-direction: column;
+    }
+
+    .image-preview-card.active {
+        display: flex;
+    }
+
+    .preview-header {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--text-main);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .preview-image-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 0;
+        background: var(--bg-primary);
+        border-radius: 12px;
+        padding: 16px;
+    }
+
+    .preview-image {
+        width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 8px;
+    }
+
+    /* Loading State */
+    .loading-state {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 80px 40px;
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+        display: none;
+        min-height: 500px;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .loading-state.active {
+        display: flex;
+    }
+
+
+    .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid rgba(99, 102, 241, 0.1);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin: 0;
+    }
+
+    /* Right Column - Analysis Results (60%) */
+    .results-section {
+        display: flex;
+        flex-direction: column;
+        min-height: 500px;
+        height: 100%;
+    }
+
+    .results-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: var(--shadow-sm);
+        min-height: 500px;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+
+    .results-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .results-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin: 0;
+        letter-spacing: -0.01em;
+    }
+
+    .results-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-secondary {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background: transparent;
+        color: var(--text-main);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-secondary:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: rgba(99, 102, 241, 0.05);
+    }
+
+    .btn-secondary svg {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2;
+    }
+
+    /* Empty State - Results */
+    .results-empty {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 40px;
+        color: var(--text-secondary);
+    }
+
+    .results-empty-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 20px;
+        opacity: 0.4;
+    }
+
+    .results-empty-icon svg {
+        width: 64px;
+        height: 64px;
+        stroke-width: 1.5;
+    }
+
+    .results-empty-text {
+        font-size: 0.9375rem;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+
+    /* Results Content */
+    .results-content {
+        flex: 1;
+        display: none;
+    }
+
+    .results-content.active {
+        display: block;
+    }
+
+    .extracted-text {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 24px;
+        font-size: 0.9375rem;
+        line-height: 1.8;
+        color: var(--text-main);
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        max-height: 600px;
+        overflow-y: auto;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        flex: 1;
+    }
+
+    .extracted-text:empty::before {
+        content: 'No text extracted from the document.';
+        color: var(--text-secondary);
+        opacity: 0.6;
+    }
+
+    /* JSON Toggle */
+    .json-viewer {
+        display: none;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 24px;
+        max-height: 600px;
+        overflow-y: auto;
+        font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+        font-size: 0.8125rem;
+        line-height: 1.6;
+        color: var(--text-main);
+        flex: 1;
+    }
+
+    .json-viewer.active {
+        display: block;
+    }
+
+    .json-viewer pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    /* Footer Privacy Note - Only in Empty State */
+    .privacy-footer {
+        display: none;
+        text-align: center;
+        margin-top: auto;
+        padding-top: 40px;
+        padding-bottom: 24px;
+        border-top: 1px solid var(--border-color);
+        width: 100%;
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .ocr-container:not(.has-content) .privacy-footer {
+        display: block;
+    }
+
+    .privacy-footer-text {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        opacity: 0.7;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+        .ocr-container {
+            grid-template-columns: 1fr;
+            padding: 0 16px;
+        }
+
+        .ocr-container:not(.has-content) {
+            max-width: 900px;
+        }
+
+        .upload-section,
+        .results-section {
+            min-height: auto;
+        }
+
+        .upload-zone {
+            min-height: 400px;
+            padding: 60px 32px;
+        }
+
+        .upload-zone.compact {
+            max-height: 90px;
+            padding: 14px 18px;
+        }
+
+        .results-card {
+            min-height: 400px;
+        }
+
+        .file-info-card,
+        .image-preview-card,
+        .results-card {
+            padding: 24px;
+        }
+
+        .privacy-footer {
+            margin-top: 40px;
+            padding-top: 16px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .ocr-container {
+            padding: 0 12px;
+        }
+
+        .ocr-container:not(.has-content) {
+            max-width: 100%;
+        }
+
+        .upload-zone {
+            min-height: 300px;
+            padding: 40px 24px;
+        }
+
+        .upload-icon {
+            width: 96px;
+            height: 96px;
+            margin-bottom: 24px;
+        }
+
+        .upload-icon svg {
+            width: 96px;
+            height: 96px;
+        }
+
+        .file-info-card,
+        .image-preview-card,
+        .results-card {
+            padding: 20px;
+        }
+
+        .privacy-footer {
+            margin-top: 40px;
+            padding-top: 16px;
+        }
+
+        .privacy-footer-text {
+            font-size: 0.6875rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ocr-container">
+    <!-- Left Column: File Upload & Preview (40%) -->
+    <div class="upload-section">
+        <!-- Empty State: Drag & Drop Zone -->
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('imageInput').click()">
+            <div class="upload-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+            </div>
+            <h2 class="upload-title">Belgenizi buraya sürükleyin</h2>
+            <p class="upload-subtitle">veya dosya seçmek için tıklayın</p>
+            <p class="upload-formats">Desteklenen formatlar: PDF, JPG, PNG</p>
+            <form action="/submit/handwritten" method="POST" enctype="multipart/form-data" id="ocrForm">
+                <input type="file" id="imageInput" name="file" accept="image/*,.pdf" class="file-input" required>
+            </form>
+        </div>
+
+        <!-- Compact Upload Zone - After File Upload -->
+        <div class="upload-zone compact" id="compactUploadZone" onclick="document.getElementById('imageInput').click()">
+            <div class="upload-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+            </div>
+            <p class="upload-text">Farklı dosya seçmek için tıklayın veya sürükleyin</p>
+        </div>
+
+        <!-- Loaded State: File Info Card -->
+        <div class="file-info-card" id="fileInfoCard">
+            <div class="file-info-header">
+                <div class="file-info-content">
+                    <div class="file-icon-wrapper">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                    </div>
+                    <div class="file-details">
+                        <div class="file-name" id="fileName">-</div>
+                        <div class="file-meta" id="fileMeta">-</div>
+                    </div>
+                </div>
+                <div class="file-actions">
+                    <button class="btn-icon" onclick="clearFile()" title="Dosyayı Kaldır">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Preview -->
+        <div class="image-preview-card" id="imagePreviewCard">
+            <div class="preview-header">Source Image</div>
+            <div class="preview-image-container">
+                {% if image_path %}
+                <img src="{{ url_for('static', filename=image_path) }}" alt="Uploaded Document" class="preview-image" id="previewImage">
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-state" id="loadingState">
+            <div class="spinner"></div>
+            <p class="loading-text">Belge analiz ediliyor...</p>
+        </div>
+    </div>
+
+    <!-- Right Column: Analysis Results (60%) -->
+    <div class="results-section">
+        <div class="results-card">
+            <div class="results-header">
+                <h3 class="results-title">Analiz Sonuçları</h3>
+                <div class="results-actions">
+                    <button class="btn-secondary" onclick="toggleJsonView()" id="jsonToggleBtn" style="display: none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 18 22 12 16 6"></polyline>
+                            <polyline points="8 6 2 12 8 18"></polyline>
+                        </svg>
+                        <span id="jsonToggleText">Ham JSON'ı Göster</span>
+                    </button>
+                    <button class="btn-secondary" onclick="copyToClipboard()" id="copyBtn" style="display: none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        Kopyala
+                    </button>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="results-empty" id="resultsEmpty">
+                <div class="results-empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                </div>
+                <p class="results-empty-text">Sonuçlar burada görünecek</p>
+            </div>
+
+            <!-- Results Content -->
+            <div class="results-content" id="resultsContent">
+                <div class="extracted-text" id="extractedText">{% if extracted_text %}{{ extracted_text }}{% endif %}</div>
+                <div class="json-viewer" id="jsonViewer">
+                    <pre id="jsonContent"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Privacy Note - Only shown in empty state -->
+    <div class="privacy-footer">
+        <p class="privacy-footer-text">
+            Your privacy is our priority. All documents are processed securely using AI-powered OCR technology. © 2025 AI Student Portal.
+        </p>
+    </div>
+</div>
+
+<script>
+    // State Management
+    let currentFile = null;
+    let extractedText = {% if extracted_text %}{{ extracted_text | tojson }}{% else %}null{% endif %};
+    let showJson = false;
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.querySelector('.ocr-container');
+        
+        {% if extracted_text %}
+        // Show results if text is already extracted
+        showResults(extractedText);
+        if (container) container.classList.add('has-content');
+        {% endif %}
+
+        {% if image_path %}
+        // Show file info and preview if image exists
+        const fileName = '{{ image_path.split("/")[-1] }}';
+        const fileSize = 'Yüklenmiş';
+        
+        // Switch to compact upload zone
+        const uploadZone = document.getElementById('uploadZone');
+        const compactUploadZone = document.getElementById('compactUploadZone');
+        if (uploadZone) uploadZone.style.display = 'none';
+        if (compactUploadZone) compactUploadZone.classList.add('active');
+        
+        showFileInfo(fileName, fileSize);
+        showImagePreview('{{ url_for("static", filename=image_path) }}');
+        if (container) container.classList.add('has-content');
+        {% endif %}
+    });
+
+    // Drag & Drop
+    const uploadZone = document.getElementById('uploadZone');
+    const compactUploadZone = document.getElementById('compactUploadZone');
+    const imageInput = document.getElementById('imageInput');
+    const ocrForm = document.getElementById('ocrForm');
+
+    function setupDragDrop(element) {
+        if (!element) return;
+        
+        element.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            element.classList.add('dragover');
+        });
+
+        element.addEventListener('dragleave', () => {
+            element.classList.remove('dragover');
+        });
+
+        element.addEventListener('drop', (e) => {
+            e.preventDefault();
+            element.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+    }
+
+    if (uploadZone && imageInput && ocrForm) {
+        setupDragDrop(uploadZone);
+        setupDragDrop(compactUploadZone);
+
+        imageInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                handleFileSelect(this.files[0]);
+            }
+        });
+    }
+
+    function handleFileSelect(file) {
+        currentFile = file;
+        
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+        if (!validTypes.includes(file.type)) {
+            alert('Lütfen geçerli bir dosya formatı seçin (PDF, JPG, PNG)');
+            return;
+        }
+
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('Dosya boyutu 10MB\'dan küçük olmalıdır');
+            return;
+        }
+
+        // Show file info
+        const fileSize = formatFileSize(file.size);
+        showFileInfo(file.name, fileSize);
+
+        // Show image preview if image
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                showImagePreview(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Switch to compact upload zone
+        if (uploadZone) uploadZone.style.display = 'none';
+        if (compactUploadZone) {
+            compactUploadZone.classList.add('active');
+            setupDragDrop(compactUploadZone);
+        }
+
+        // Add has-content class to container
+        const container = document.querySelector('.ocr-container');
+        if (container) container.classList.add('has-content');
+
+        // Show loading
+        showLoading();
+
+        // Submit form
+        ocrForm.submit();
+    }
+
+    function showFileInfo(fileName, fileSize) {
+        document.getElementById('fileName').textContent = fileName;
+        document.getElementById('fileMeta').textContent = fileSize;
+        document.getElementById('fileInfoCard').classList.add('active');
+    }
+
+    function showImagePreview(imageSrc) {
+        const previewCard = document.getElementById('imagePreviewCard');
+        const previewImage = document.getElementById('previewImage');
+        if (previewImage) {
+            previewImage.src = imageSrc;
+        } else {
+            previewCard.innerHTML = `<img src="${imageSrc}" alt="Uploaded Document" class="preview-image">`;
+        }
+        previewCard.classList.add('active');
+    }
+
+    function showLoading() {
+        document.getElementById('loadingState').classList.add('active');
+        document.getElementById('fileInfoCard').classList.remove('active');
+        document.getElementById('imagePreviewCard').classList.remove('active');
+    }
+
+    function showResults(text) {
+        if (!text) return;
+
+        extractedText = text;
+        
+        // Hide empty state
+        document.getElementById('resultsEmpty').style.display = 'none';
+        
+        // Show results
+        const resultsContent = document.getElementById('resultsContent');
+        resultsContent.classList.add('active');
+        
+        // Set text
+        document.getElementById('extractedText').textContent = text;
+        
+        // Show action buttons
+        document.getElementById('copyBtn').style.display = 'flex';
+        document.getElementById('jsonToggleBtn').style.display = 'flex';
+        
+        // Hide loading
+        document.getElementById('loadingState').classList.remove('active');
+    }
+
+    function clearFile() {
+        currentFile = null;
+        const uploadZone = document.getElementById('uploadZone');
+        const compactUploadZone = document.getElementById('compactUploadZone');
+        const container = document.querySelector('.ocr-container');
+        
+        if (uploadZone) uploadZone.style.display = 'flex';
+        if (compactUploadZone) compactUploadZone.classList.remove('active');
+        if (container) container.classList.remove('has-content');
+        
+        document.getElementById('fileInfoCard').classList.remove('active');
+        document.getElementById('imagePreviewCard').classList.remove('active');
+        document.getElementById('imageInput').value = '';
+        
+        // Clear results
+        document.getElementById('resultsEmpty').style.display = 'flex';
+        document.getElementById('resultsContent').classList.remove('active');
+        document.getElementById('copyBtn').style.display = 'none';
+        document.getElementById('jsonToggleBtn').style.display = 'none';
+        extractedText = null;
+    }
+
+    function toggleJsonView() {
+        showJson = !showJson;
+        const extractedTextEl = document.getElementById('extractedText');
+        const jsonViewer = document.getElementById('jsonViewer');
+        const jsonContent = document.getElementById('jsonContent');
+        const toggleText = document.getElementById('jsonToggleText');
+
+        if (showJson) {
+            // Create JSON object from extracted text
+            const jsonData = {
+                filename: currentFile ? currentFile.name : '{{ image_path.split("/")[-1] if image_path else "unknown" }}',
+                content: extractedText,
+                extracted_at: new Date().toISOString(),
+                type: 'ocr_extraction'
+            };
+            jsonContent.textContent = JSON.stringify(jsonData, null, 2);
+            extractedTextEl.style.display = 'none';
+            jsonViewer.classList.add('active');
+            toggleText.textContent = 'Metin Görünümüne Dön';
+        } else {
+            extractedTextEl.style.display = 'block';
+            jsonViewer.classList.remove('active');
+            toggleText.textContent = 'Ham JSON\'ı Göster';
+        }
+    }
+
+    function copyToClipboard() {
+        const text = extractedText || document.getElementById('extractedText').textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById('copyBtn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Kopyalandı!';
+            btn.style.color = 'var(--accent)';
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.style.color = '';
+            }, 2000);
+        });
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+</script>
+{% endblock %}

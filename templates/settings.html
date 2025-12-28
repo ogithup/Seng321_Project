@@ -1,0 +1,229 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Account Settings - AAFS AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Two-Column Layout - Integrated into main content */
+    .settings-container {
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        gap: 24px;
+        max-width: 1200px;
+    }
+
+    /* Left Column: Profile Summary */
+    .profile-summary {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 32px;
+        border: 1px solid var(--border-color);
+        text-align: center;
+    }
+
+    .profile-avatar-large {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1 0%, #0f172a 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0 auto 20px;
+        border: 4px solid var(--card-bg);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .profile-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin: 0 0 8px 0;
+    }
+
+    .profile-email {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin: 0 0 24px 0;
+    }
+
+    .btn-upload-avatar {
+        width: 100%;
+        padding: 10px 16px;
+        background: var(--accent);
+        color: var(--white);
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-bottom: 32px;
+    }
+
+    .btn-upload-avatar:hover {
+        background: var(--accent-hover);
+    }
+
+    .account-stats {
+        border-top: 1px solid var(--border-color);
+        padding-top: 24px;
+    }
+
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+
+    .stat-label {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+    }
+
+    .stat-value {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    /* Right Column: Account Settings Form */
+    .settings-form-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 32px;
+        border: 1px solid var(--border-color);
+    }
+
+    .form-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin: 0 0 24px 0;
+        letter-spacing: -0.01em;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--bg-primary);
+        color: var(--text-main);
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .form-input::placeholder {
+        color: var(--text-secondary);
+        opacity: 0.6;
+    }
+
+    .btn-save {
+        width: 100%;
+        padding: 12px 24px;
+        background: var(--accent);
+        color: var(--white);
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-top: 8px;
+    }
+
+    .btn-save:hover {
+        background: var(--accent-hover);
+    }
+
+    /* Responsive */
+    @media (max-width: 968px) {
+        .settings-container {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <!-- Left Column: Profile Summary -->
+    <div class="profile-summary">
+        <div class="profile-avatar-large">{{ user.username[0] | upper }}</div>
+        <h2 class="profile-name">{{ user.username }}</h2>
+        <p class="profile-email">{{ user.email }}</p>
+        
+        <button class="btn-upload-avatar">Upload Profile Picture</button>
+
+        <div class="account-stats">
+            <div class="stat-item">
+                <span class="stat-label">Member Since</span>
+                <span class="stat-value">{{ user.created_at.strftime('%b %Y') if user.created_at else 'N/A' }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Total Activities</span>
+                <span class="stat-value">{{ user.submissions|length if user.submissions else 0 }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Role</span>
+                <span class="stat-value">{{ user.role }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Account Settings Form -->
+    <div class="settings-form-card">
+        <h2 class="form-title">Account Settings</h2>
+        
+        <form method="POST" action="/settings">
+            <div class="form-group">
+                <label class="form-label" for="username">Full Name</label>
+                <input type="text" id="username" name="username" class="form-input" value="{{ user.username }}" placeholder="Enter your full name">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="email">Email Address</label>
+                <input type="email" id="email" name="email" class="form-input" value="{{ user.email }}" placeholder="yourname@example.com">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">New Password</label>
+                <input type="password" id="password" name="password" class="form-input" placeholder="Leave blank to keep current password">
+            </div>
+
+            <button type="submit" class="btn-save">Save Changes</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

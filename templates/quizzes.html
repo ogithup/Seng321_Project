@@ -1,0 +1,535 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Interactive Quizzes - AAFS AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Page Background - Match Assignments */
+    body {
+        background: var(--bg-primary);
+        overflow: hidden; /* Disable page scrolling */
+    }
+
+    [data-theme="dark"] body {
+        background: #0f172a; /* Slate 900 */
+    }
+
+    /* Main Wrapper - Flex Column, Full Screen, Start Alignment */
+    .quizzes-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100%;
+        align-items: flex-start;
+        justify-content: flex-start;
+        background: var(--bg-primary);
+        padding: 0;
+        margin: 0;
+        overflow: hidden; /* Disable container scrolling */
+    }
+
+    /* Header with Filter Bar - Top Left, Milimetrik Alignment with sidebar-top border line */
+    .quizzes-header {
+        width: 100%;
+        padding-left: 0; /* Override content-wrapper padding */
+        padding-top: 0; /* Hard-override: Remove all pt-8, pt-10 values - force zero vertical space */
+        padding-bottom: 16px; /* pb-4 */
+        padding-right: 0; /* Override content-wrapper padding */
+        display: flex;
+        flex-direction: column;
+        gap: 16px; /* Match assignments exactly - title and subtitle spacing */
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        margin: 0;
+        margin-top: -8px; /* Fine-tuned negative margin: Reduced from -16px to -8px (4-8px down adjustment) - milimetrik alignment with sidebar-top border line */
+        margin-left: 32px; /* pl-8 */
+        margin-right: 32px;
+    }
+
+    .quizzes-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-main);
+        letter-spacing: -0.02em;
+        margin: 0;
+    }
+
+
+    /* Filter Bar - Flex Start, Gap 4, Full Width (Matches assignments) */
+    .filter-bar {
+        display: flex;
+        justify-content: flex-start;
+        gap: 12px; /* Match assignments exactly */
+        flex-wrap: wrap;
+        width: 100%;
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+    }
+
+    /* Filter Pills - Match Image Style (Rounded Rectangular) - Exact same as assignments */
+    .filter-pill {
+        padding: 6px 14px;
+        border-radius: 12px; /* Rounded rectangular, not fully rounded */
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.5;
+        color: #475569; /* Dark gray text for inactive */
+        background: #ffffff; /* White background */
+        border: 1px solid #e2e8f0; /* Light gray border */
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    [data-theme="dark"] .filter-pill:not(.active) {
+        background: #ffffff;
+        color: #475569;
+        border-color: #e2e8f0;
+    }
+
+    .filter-pill:hover:not(.active) {
+        background: #f8f9fa;
+        border-color: #e2e8f0;
+    }
+
+    .filter-pill.active {
+        background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); /* Purple gradient */
+        color: #ffffff; /* White text */
+        border-color: transparent;
+        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3); /* Soft shadow */
+    }
+
+    /* Scrollable Container - Below Filter Bar (No Scrolling) */
+    .quizzes-grid-container {
+        width: 100%;
+        max-width: 1400px;
+        overflow: hidden; /* Disable all scrolling */
+        padding: 32px;
+        padding-right: 32px;
+    }
+
+    /* Quiz Cards Grid - 3 Columns */
+    .quizzes-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        width: 100%;
+        padding-bottom: 20px;
+    }
+
+    @media (min-width: 1400px) {
+        .quizzes-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (min-width: 1000px) and (max-width: 1399px) {
+        .quizzes-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 999px) {
+        .quizzes-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Quiz Card - Modern Design */
+    .quiz-card {
+        background: var(--card-bg);
+        border-radius: 30px; /* rounded-3xl */
+        padding: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        cursor: pointer;
+    }
+
+    .quiz-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--accent);
+    }
+
+    .quiz-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .quiz-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--text-main);
+        line-height: 1.3;
+        flex: 1;
+        margin: 0;
+        letter-spacing: -0.01em;
+    }
+
+    .quiz-type-badge {
+        padding: 6px 12px;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+        flex-shrink: 0;
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--accent);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    .quiz-meta {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+    }
+
+    .quiz-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .quiz-meta-item svg {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2;
+        opacity: 0.7;
+    }
+
+    .btn-start-quiz {
+        width: 100%;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: var(--white);
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.9375rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        margin-top: auto;
+    }
+
+    .btn-start-quiz:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-start-quiz svg {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2.5;
+        transition: transform 0.2s ease;
+    }
+
+    .btn-start-quiz:hover svg {
+        transform: translateX(2px);
+    }
+
+    /* Content Area - Flex 1, Full Width, Perfect Centering (Not too close to header) */
+    .quizzes-content-area {
+        flex: 1;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin: 0;
+        min-height: 0; /* Allow flex shrinking */
+    }
+
+    /* Empty State - Clean Design (No Borders/Shadows, Direct on Background) */
+    .empty-state {
+        max-width: 500px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        background: transparent; /* No white box */
+        border: none; /* No frame */
+        box-shadow: none; /* No shadow */
+        padding: 0;
+        margin: 0;
+    }
+
+    .empty-state-illustration {
+        width: 160px;
+        height: 160px;
+        max-width: 200px;
+        margin: 0 auto;
+        color: var(--accent);
+        opacity: 0.8;
+    }
+
+    [data-theme="dark"] .empty-state-illustration {
+        opacity: 0.9;
+    }
+
+    .empty-state-illustration svg {
+        width: 100%;
+        height: 100%;
+    }
+
+    .empty-state-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin: 0;
+        letter-spacing: -0.02em;
+        line-height: 1.3;
+    }
+
+    [data-theme="dark"] .empty-state-title {
+        color: #f1f5f9; /* slate-100 */
+    }
+
+    .empty-state-text {
+        font-size: 1rem;
+        color: var(--text-secondary);
+        margin: 0;
+        line-height: 1.7;
+        max-width: 400px;
+    }
+
+    [data-theme="dark"] .empty-state-text {
+        color: #cbd5e1; /* slate-300 */
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .quizzes-container {
+            padding: 0 16px;
+        }
+
+        .quizzes-header {
+            margin-bottom: 20px;
+            gap: 12px;
+        }
+
+        .quizzes-title {
+            font-size: 1.25rem;
+        }
+
+        .quizzes-container {
+            height: auto;
+            min-height: 100vh;
+        }
+
+        .quizzes-header {
+            padding-left: 0;
+            padding-top: 0; /* Hard-override: Remove all pt- values */
+            padding-bottom: 12px;
+            padding-right: 0;
+            margin-top: -4px; /* Fine-tuned negative margin on mobile: Reduced adjustment for milimetrik alignment */
+            margin-left: 20px;
+            margin-right: 20px;
+        }
+
+        .quizzes-title {
+            font-size: 1.25rem;
+        }
+
+        .filter-bar {
+            gap: 8px;
+        }
+
+        .filter-pill {
+            padding: 5px 12px;
+            font-size: 0.6875rem;
+        }
+
+        .quizzes-grid-container {
+            padding: 20px;
+        }
+
+        .quizzes-content-area {
+            min-height: calc(100vh - 250px);
+            padding: 30px 0;
+        }
+
+        .quizzes-grid-container {
+            padding: 20px 0;
+        }
+
+        .quiz-card {
+            padding: 20px;
+        }
+
+        .empty-state-illustration {
+            width: 140px;
+            height: 140px;
+        }
+
+        .empty-state-title {
+            font-size: 1.5rem;
+        }
+
+        .empty-state-text {
+            font-size: 0.9375rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="quizzes-container">
+    <!-- Header with Title and Filter Bar -->
+    <div class="quizzes-header">
+        <h1 class="quizzes-title">Interactive Quizzes</h1>
+        <div class="filter-bar">
+            <button class="filter-pill active" data-filter="all">All</button>
+            <button class="filter-pill" data-filter="grammar">Grammar</button>
+            <button class="filter-pill" data-filter="vocab">Vocab</button>
+            <button class="filter-pill" data-filter="reading">Reading</button>
+        </div>
+    </div>
+
+    <!-- Content Area - Flex 1, Centered -->
+    {% if quizzes and quizzes|length > 0 %}
+    <div class="quizzes-content-area">
+        <div class="quizzes-grid-container">
+        <div class="quizzes-grid">
+            {% for quiz in quizzes %}
+            <div class="quiz-card" onclick="window.location.href='/quiz/{{ quiz.id }}'">
+                <div class="quiz-header">
+                    <h3 class="quiz-title">{{ quiz.quiz_title or quiz.title }}</h3>
+                    <span class="quiz-type-badge">
+                        {% if 'grammar' in (quiz.quiz_title or quiz.title or '')|lower %}
+                            Grammar
+                        {% elif 'vocab' in (quiz.quiz_title or quiz.title or '')|lower %}
+                            Vocab
+                        {% elif 'reading' in (quiz.quiz_title or quiz.title or '')|lower %}
+                            Reading
+                        {% else %}
+                            Quiz
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="quiz-meta">
+                    <div class="quiz-meta-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span>{{ quiz.estimated_time or 5 }} min</span>
+                    </div>
+                </div>
+
+                <a href="/quiz/{{ quiz.id }}" class="btn-start-quiz" onclick="event.stopPropagation();">
+                    Start Now
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty State - Perfect Center -->
+    <div class="quizzes-content-area">
+        <div class="empty-state">
+            <div class="empty-state-illustration">
+                <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Background Circle -->
+                    <circle cx="100" cy="100" r="90" fill="url(#quizGradient)" opacity="0.1"/>
+                    <defs>
+                        <linearGradient id="quizGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <!-- Quiz Robot Character -->
+                    <g transform="translate(100, 100)">
+                        <!-- Robot Head -->
+                        <rect x="-30" y="-40" width="60" height="60" rx="10" fill="currentColor" opacity="0.9"/>
+                        <circle cx="-12" cy="-20" r="5" fill="var(--bg-primary)"/>
+                        <circle cx="12" cy="-20" r="5" fill="var(--bg-primary)"/>
+                        <rect x="-10" y="8" width="20" height="5" rx="2" fill="var(--bg-primary)"/>
+                        
+                        <!-- Question Mark on Head -->
+                        <text x="0" y="-5" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="var(--accent)" text-anchor="middle" opacity="0.9">?</text>
+                        
+                        <!-- Robot Body -->
+                        <rect x="-25" y="20" width="50" height="45" rx="8" fill="currentColor" opacity="0.9"/>
+                        <rect x="-20" y="30" width="40" height="25" rx="4" fill="var(--bg-primary)" opacity="0.2"/>
+                        
+                        <!-- Robot Arms -->
+                        <rect x="-35" y="25" width="15" height="30" rx="7" fill="currentColor" opacity="0.9"/>
+                        <rect x="20" y="25" width="15" height="30" rx="7" fill="currentColor" opacity="0.9"/>
+                        
+                        <!-- Quiz Papers in Hand -->
+                        <g transform="translate(-30, 35)">
+                            <rect x="0" y="0" width="12" height="16" rx="2" fill="var(--bg-primary)" opacity="0.8"/>
+                            <line x1="3" y1="4" x2="9" y2="4" stroke="var(--accent)" stroke-width="1.5" opacity="0.6"/>
+                            <line x1="3" y1="7" x2="9" y2="7" stroke="var(--accent)" stroke-width="1.5" opacity="0.6"/>
+                        </g>
+                    </g>
+                    
+                    <!-- Floating Question Marks -->
+                    <g opacity="0.2">
+                        <text x="50" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="currentColor" text-anchor="middle">?</text>
+                        <text x="150" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="currentColor" text-anchor="middle">?</text>
+                        <text x="50" y="150" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="currentColor" text-anchor="middle">?</text>
+                        <text x="150" y="150" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="currentColor" text-anchor="middle">?</text>
+                    </g>
+                </svg>
+            </div>
+            <div class="empty-state-title">Ready for a Brainstorm?</div>
+            <div class="empty-state-text">You can request a new quiz from your teacher.</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Filter functionality
+    const filterPills = document.querySelectorAll('.filter-pill');
+    const quizCards = document.querySelectorAll('.quiz-card');
+
+    filterPills.forEach(pill => {
+        pill.addEventListener('click', function() {
+            filterPills.forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
+            const filter = this.dataset.filter;
+
+            // Filter logic - hide/show cards based on filter
+            quizCards.forEach(card => {
+                const cardType = card.querySelector('.quiz-type-badge').textContent.toLowerCase();
+                if (filter === 'all' || cardType.includes(filter)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
