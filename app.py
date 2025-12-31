@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 import docx 
 from functools import wraps
+import os
 
 # Project internal imports
 from config import Config
@@ -16,6 +17,9 @@ from services.ocr_service import OCRService
 
 def create_app():
     app = Flask(__name__)
+    UPLOAD_FOLDER = 'static/profile_pics'
+    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     app.config.from_object(Config)
 
     # Initialize Database
@@ -50,7 +54,7 @@ def create_app():
         public_routes = ['login', 'register', 'static', 'privacy', 'terms']
         if not current_user.is_authenticated and request.endpoint not in public_routes:
             return redirect(url_for('login'))
-
+        
     @app.after_request
     def add_header(response):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -428,7 +432,96 @@ def create_app():
     def quizzes():
         user_quizzes = Quiz.query.filter_by(user_id=current_user.id).all()
         return render_template('quizzes.html', quizzes=user_quizzes)
+    
+    @app.route('/profile')
+    @login_required
+    def profile():
+       return render_template('profile.html', user=current_user) 
+      
+    # --- UPDATE USER BIOGRAPHY ---
+    @app.route('/update_bio', methods=['POST'])
+    @login_required
+    def update_bio():
+        # Get the bio content from the form
+        current_user.bio = request.form.get('new_bio')
+        try:
+            # Save the changes to the database
+            db.session.commit()
+            flash("Bio updated successfully!", "success")
+        except Exception:
+            # Rollback in case of database error
+            db.session.rollback()
+            flash("An error occurred while updating bio.", "danger")
+        return redirect(url_for('profile'))
 
+    # --- UPDATE PERSONAL INFORMATION ---
+    @app.route('/update_personal_info', methods=['POST'])
+    @login_required
+    def update_personal_info():
+        current_user.university = request.form.get('university')
+        current_user.grade = request.form.get('grade')
+        current_user.teacher = request.form.get('teacher')
+        current_user.phone = request.form.get('phone')
+        
+        try:
+            db.session.commit()
+            flash("Personal information updated successfully!", "success")
+        except Exception:
+            db.session.rollback()
+            flash("An error occurred during update.", "danger")
+        return redirect(url_for('profile'))
+    @app.route('/change_password', methods=['POST'])
+    @login_required
+    def change_password():
+        current_pw = request.form.get('current_password')
+        new_pw = request.form.get('new_password')
+        confirm_pw = request.form.get('confirm_password')
+
+        # 1. Verify if the current password is correct
+        if not check_password_hash(current_user.password, current_pw):
+            flash("Current password is incorrect.", "danger")
+            return redirect(url_for('settings'))
+
+        # 2. Check if the two new passwords match
+        if new_pw != confirm_pw:
+            flash("New passwords do not match.", "danger")
+            return redirect(url_for('settings'))
+
+        # 3. Hash the new password and update the database
+        try:
+            current_user.password = generate_password_hash(new_pw, method='pbkdf2:sha256')
+            db.session.commit()
+            flash("Password changed successfully!", "success")
+        except Exception:
+            db.session.rollback()
+            flash("An error occurred while updating the password.", "danger")
+
+        return redirect(url_for('settings'))
+
+    # --- SETTINGS: UPDATE AI PREFERENCES ---
+    @app.route('/update_ai_settings', methods=['POST'])
+    @login_required
+    def update_ai_settings():
+        # Retrieve data from the settings form
+        ai_tone = request.form.get('ai_tone')
+        ai_speed = request.form.get('ai_speed')
+        # Checkbox: returns True if checked, False if not
+        ai_reports = 'weekly_report' in request.form 
+        
+        try:
+            # Update user preferences in the database
+            current_user.ai_tone = ai_tone
+            current_user.ai_speed = float(ai_speed) if ai_speed else 1.0
+            current_user.ai_reports = ai_reports
+            
+            db.session.commit()
+            flash("AI Preferences saved successfully!", "success")
+        except Exception:
+            db.session.rollback()
+            flash("Failed to save AI settings.", "danger")
+            
+        return redirect(url_for('settings'))
+      
     @app.route('/goals', methods=['GET', 'POST'])
     @login_required
     def goals():
@@ -552,6 +645,9 @@ def create_app():
                                active_count=active_count,
                                pending_count=pending_count,
                                sparkline_data=sparkline_data)
+        
+        
+        
 
     # --- SUBMISSION ROUTES ---
 

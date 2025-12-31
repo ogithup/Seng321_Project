@@ -1,229 +1,387 @@
 ﻿{% extends "base.html" %}
 
-{% block title %}Account Settings - AAFS AI{% endblock %}
+{% block title %}Settings - AAFS AI{% endblock %}
+
+
 
 {% block extra_css %}
+
 <style>
-    /* Two-Column Layout - Integrated into main content */
+
     .settings-container {
-        display: grid;
-        grid-template-columns: 1fr 1.5fr;
-        gap: 24px;
-        max-width: 1200px;
+
+        max-width: 800px;
+
+        margin: 0 auto;
+
+        padding: 20px;
+
     }
 
-    /* Left Column: Profile Summary */
-    .profile-summary {
-        background: var(--card-bg);
-        border-radius: 12px;
-        padding: 32px;
-        border: 1px solid var(--border-color);
-        text-align: center;
-    }
 
-    .profile-avatar-large {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #6366f1 0%, #0f172a 100%);
-        color: #ffffff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin: 0 auto 20px;
-        border: 4px solid var(--card-bg);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
 
-    .profile-name {
-        font-size: 1.25rem;
-        font-weight: 600;
+    .settings-title {
+
+        margin-bottom: 25px;
+
         color: var(--text-main);
-        margin: 0 0 8px 0;
+
+        font-weight: 800;
+
     }
 
-    .profile-email {
-        font-size: 0.875rem;
-        color: var(--text-secondary);
-        margin: 0 0 24px 0;
+
+
+    .glass-card {
+
+        margin-bottom: 20px;
+
+        padding: 25px;
+
     }
 
-    .btn-upload-avatar {
-        width: 100%;
-        padding: 10px 16px;
-        background: var(--accent);
-        color: var(--white);
-        border: none;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.875rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        margin-bottom: 32px;
-    }
 
-    .btn-upload-avatar:hover {
-        background: var(--accent-hover);
-    }
 
-    .account-stats {
-        border-top: 1px solid var(--border-color);
-        padding-top: 24px;
-    }
+    /* Collapsible Password Section */
 
-    .stat-item {
+    .password-header {
+
         display: flex;
+
         justify-content: space-between;
+
         align-items: center;
-        padding: 12px 0;
-        border-bottom: 1px solid var(--border-color);
+
+        cursor: pointer;
+
     }
 
-    .stat-item:last-child {
-        border-bottom: none;
+
+
+    .password-content {
+
+        max-height: 0;
+
+        overflow: hidden;
+
+        transition: max-height 0.3s ease-out, margin-top 0.3s;
+
     }
 
-    .stat-label {
-        font-size: 0.8125rem;
-        color: var(--text-secondary);
+
+
+    .password-content.show {
+
+        max-height: 500px; /* Adjust based on content height */
+
+        margin-top: 20px;
+
     }
 
-    .stat-value {
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--text-main);
+
+
+    .toggle-icon {
+
+        transition: transform 0.3s;
+
+        font-size: 0.8rem;
+
+        color: var(--accent);
+
     }
 
-    /* Right Column: Account Settings Form */
-    .settings-form-card {
-        background: var(--card-bg);
-        border-radius: 12px;
-        padding: 32px;
-        border: 1px solid var(--border-color);
+
+
+    .rotate {
+
+        transform: rotate(180deg);
+
     }
 
-    .form-title {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--text-main);
-        margin: 0 0 24px 0;
-        letter-spacing: -0.01em;
+
+
+    /* AI Card Styling */
+
+    .ai-card {
+
+        border: 1px solid var(--accent) !important;
+
+        position: relative;
+
     }
+
+
+
+    .ai-badge {
+
+        position: absolute;
+
+        top: -12px;
+
+        right: 20px;
+
+        background: var(--accent);
+
+        color: white;
+
+        padding: 2px 12px;
+
+        border-radius: 20px;
+
+        font-size: 0.75rem;
+
+        font-weight: 700;
+
+    }
+
+
+
+    /* Form Elements */
 
     .form-group {
-        margin-bottom: 20px;
+
+        margin-bottom: 15px;
+
     }
+
+
 
     .form-label {
+
         display: block;
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--text-main);
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-    }
 
-    .form-input {
-        width: 100%;
-        padding: 12px 16px;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        background: var(--bg-primary);
-        color: var(--text-main);
-        font-size: 0.875rem;
-        transition: all 0.2s ease;
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
+        font-size: 0.85rem;
 
-    .form-input:focus {
-        outline: none;
-        border-color: #6366f1;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-    }
+        margin-bottom: 5px;
 
-    .form-input::placeholder {
         color: var(--text-secondary);
-        opacity: 0.6;
+
     }
 
-    .btn-save {
+
+
+    .custom-input, .custom-select {
+
         width: 100%;
-        padding: 12px 24px;
-        background: var(--accent);
-        color: var(--white);
-        border: none;
+
+        padding: 10px;
+
         border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.875rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        margin-top: 8px;
+
+        border: 1px solid var(--border-color);
+
+        background: var(--bg-primary);
+
+        color: var(--text-main);
+
     }
 
-    .btn-save:hover {
-        background: var(--accent-hover);
+
+
+    .submit-btn {
+
+        width: 100%;
+
+        margin-top: 10px;
+
     }
 
-    /* Responsive */
-    @media (max-width: 968px) {
-        .settings-container {
-            grid-template-columns: 1fr;
-        }
-    }
 </style>
+
 {% endblock %}
 
+
+
 {% block content %}
+
 <div class="settings-container">
-    <!-- Left Column: Profile Summary -->
-    <div class="profile-summary">
-        <div class="profile-avatar-large">{{ user.username[0] | upper }}</div>
-        <h2 class="profile-name">{{ user.username }}</h2>
-        <p class="profile-email">{{ user.email }}</p>
-        
-        <button class="btn-upload-avatar">Upload Profile Picture</button>
 
-        <div class="account-stats">
-            <div class="stat-item">
-                <span class="stat-label">Member Since</span>
-                <span class="stat-value">{{ user.created_at.strftime('%b %Y') if user.created_at else 'N/A' }}</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Total Activities</span>
-                <span class="stat-value">{{ user.submissions|length if user.submissions else 0 }}</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Role</span>
-                <span class="stat-value">{{ user.role }}</span>
-            </div>
+    <h2 class="settings-title">Settings</h2>
+
+
+
+    <div class="glass-card">
+
+        <h3>Account Information</h3>
+
+        <p class="form-label" style="margin-top: 10px;">Username: <strong>{{ user.username }}</strong></p>
+
+        <p class="form-label">Email: <strong>{{ user.email }}</strong></p>
+
+    </div>
+
+
+
+    <div class="glass-card">
+
+        <div class="password-header" onclick="togglePassword()">
+
+            <h3 style="margin: 0;">🔐 Change Password</h3>
+
+            <span id="pass-icon" class="toggle-icon">▼</span>
+
         </div>
+
+       
+
+        <div id="password-section" class="password-content">
+
+            <form action="/change_password" method="POST">
+
+                <div class="form-group">
+
+                    <label class="form-label">Current Password</label>
+
+                    <input type="password" name="current_password" class="custom-input" required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label class="form-label">New Password</label>
+
+                    <input type="password" name="new_password" class="custom-input" required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label class="form-label">Confirm New Password</label>
+
+                    <input type="password" name="confirm_password" class="custom-input" required>
+
+                </div>
+
+                <button type="submit" class="btn-primary submit-btn">Confirm Password Change</button>
+
+            </form>
+
+        </div>
+
     </div>
 
-    <!-- Right Column: Account Settings Form -->
-    <div class="settings-form-card">
-        <h2 class="form-title">Account Settings</h2>
-        
-        <form method="POST" action="/settings">
-            <div class="form-group">
-                <label class="form-label" for="username">Full Name</label>
-                <input type="text" id="username" name="username" class="form-input" value="{{ user.username }}" placeholder="Enter your full name">
-            </div>
+
+
+  <div class="glass-card ai-card">
+
+        <span class="ai-badge">AI ENHANCED</span>
+
+       
+
+        <h3 class="form-group">
+
+            🤖 AI Learning Preferences
+
+        </h3>
+
+
+
+        <form action="/update_ai_settings" method="POST">
 
             <div class="form-group">
-                <label class="form-label" for="email">Email Address</label>
-                <input type="email" id="email" name="email" class="form-input" value="{{ user.email }}" placeholder="yourname@example.com">
+
+                <label class="form-label">AI Feedback Tone</label>
+
+                <select name="ai_tone" class="custom-select">
+
+                    <option value="supportive">Supportive (Focus on motivation)</option>
+
+                    <option value="strict">Strict (Professional & Detailed correction)</option>
+
+                    <option value="balanced" selected>Balanced (Constructive & Clear)</option>
+
+                </select>
+
+                <span class="helper-text">Determines how the AI crititques your writing and speaking.</span>
+
             </div>
+
+
 
             <div class="form-group">
-                <label class="form-label" for="password">New Password</label>
-                <input type="password" id="password" name="password" class="form-input" placeholder="Leave blank to keep current password">
+
+                <label class="form-label">AI Speaking Speed (Voice Mode)</label>
+
+                <div class="speed-grid">
+
+                    <div class="speed-option">
+
+                        <input type="radio" id="slow" name="ai_speed" value="0.8">
+
+                        <label for="slow" class="speed-label">Slow</label>
+
+                    </div>
+
+                    <div class="speed-option">
+
+                        <input type="radio" id="normal" name="ai_speed" value="1.0" checked>
+
+                        <label for="normal" class="speed-label">Normal</label>
+
+                    </div>
+
+                    <div class="speed-option">
+
+                        <input type="radio" id="fast" name="ai_speed" value="1.2">
+
+                        <label for="fast" class="speed-label">Fast</label>
+
+                    </div>
+
+                </div>
+
             </div>
 
-            <button type="submit" class="btn-save">Save Changes</button>
+
+
+            <div class="form-group">
+
+                <label class="checkbox-group">
+
+                    <input type="checkbox" name="weekly_report" class="custom-checkbox" checked>
+
+                    <span>Send me weekly AI progress reports via email.</span>
+
+                </label>
+
+            </div>
+
+
+
+            <button type="submit" class="btn-primary submit-btn">
+
+                Save AI Preferences
+
+            </button>
+
         </form>
+
     </div>
+
 </div>
+
+{% endblock %}
+
+
+
+{% block extra_js %}
+
+<script>
+
+    function togglePassword() {
+
+        const content = document.getElementById('password-section');
+
+        const icon = document.getElementById('pass-icon');
+
+       
+
+        content.classList.toggle('show');
+
+        icon.classList.toggle('rotate');
+
+    }
+
+</script>
+
 {% endblock %}

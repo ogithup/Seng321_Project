@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+{% block title %}User Profile - AAFS AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ana Grid Yapısı */
+    .profile-container { 
+        max-width: 1000px; 
+        margin: 0 auto; 
+        padding: 20px; 
+        display: grid; 
+        grid-template-columns: 1fr 2fr; /* Sol 1 birim, Sağ 2 birim */
+        gap: 20px; 
+        /* align-items: stretch; -> Bu varsayılandır, sütunların eşit yükseklikte olmasını sağlar */
+    }
+    
+    /* --- SOL SÜTUN (SIDEBAR) --- */
+    .profile-sidebar { 
+        display: flex; 
+        flex-direction: column; 
+        /* Sütunun tüm yüksekliği kaplamasını sağlar */
+        height: 100%;
+    }
+
+    /* Profil Kartını Uzatmak İçin Yeni Kural */
+    .profile-sidebar .glass-card {
+        /* Kartın sütun içindeki tüm boşluğu doldurmasını sağlar */
+        flex-grow: 1; 
+        display: flex;
+        flex-direction: column;
+        /* İçeriğin dikey olarak ortalanması istenirse (isteğe bağlı) */
+        /* justify-content: center; */
+    }
+
+    /* Avatar Upload Styling */
+    .avatar-container {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 15px;
+        cursor: pointer;
+    }
+
+    .avatar-circle {
+        width: 100%; height: 100%;
+        background: var(--accent);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: 800;
+        overflow: hidden;
+        border: 4px solid var(--bg-primary);
+        transition: filter 0.3s;
+    }
+
+    .avatar-img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-container:hover .avatar-circle { filter: brightness(0.7); }
+    .upload-overlay {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        color: white; font-size: 1.5rem; opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .avatar-container:hover .upload-overlay { opacity: 1; }
+
+    /* Personal Information Section */
+    .personal-info-card { grid-column: span 2; margin-top: 10px; }
+    .info-table { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+    .info-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 12px 0; border-bottom: 1px solid var(--border-color);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .row-label { display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--text-secondary); }
+    .row-value { font-weight: 700; color: var(--text-main); }
+    
+    .status-badge-ui {
+        padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;
+        background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;
+    }
+
+    /* Achievement Hall Specific Styling */
+    .achievement-section-title {
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: var(--text-secondary);
+        margin: 25px 0 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .achievements-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+        gap: 15px; 
+    }
+
+    .achievement-card { 
+        background: var(--hover-bg); 
+        padding: 15px; 
+        border-radius: 12px; 
+        border: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        position: relative;
+        transition: transform 0.2s;
+    }
+
+    .achievement-card:hover { transform: translateY(-5px); }
+
+    .status-badge {
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        width: fit-content;
+    }
+    .status-earned { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .status-locked { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+    .achievement-card.locked { filter: grayscale(1); opacity: 0.7; border-style: dashed; }
+    
+    .achievement-header { display: flex; align-items: center; gap: 10px; }
+    .achievement-icon { font-size: 2rem; }
+    .achievement-info h6 { margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text-main); }
+    
+    .how-to-earn { 
+        font-size: 0.7rem; 
+        color: var(--accent); 
+        background: rgba(99, 102, 241, 0.05); 
+        padding: 8px; 
+        border-radius: 6px; 
+        border: 1px solid rgba(99, 102, 241, 0.1);
+        margin-top: 5px;
+    }
+
+    /* General UI */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
+        display: none; justify-content: center; align-items: center; z-index: 1000;
+    }
+    .modal-card { background: var(--bg-primary); border: 1px solid var(--accent); border-radius: 16px; padding: 30px; max-width: 450px; width: 90%; }
+    .modal-overlay.active { display: flex; }
+    .edit-input { width: 100%; background: var(--bg-primary); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px; border-radius: 8px; margin-top: 5px; }
+    
+    /* Right Column (Main Content) */
+    .profile-main { display: flex; flex-direction: column; gap: 20px; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+    .stat-box { background: var(--hover-bg); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color); cursor: pointer; transition: 0.3s; }
+
+    /* Mobil Uyumluluk */
+    @media (max-width: 768px) { 
+        .profile-container { grid-template-columns: 1fr; } 
+        .personal-info-card { grid-column: span 1; } 
+        .profile-sidebar { height: auto; } /* Mobilde yüksekliği serbest bırak */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    
+    <div class="profile-sidebar">
+        <div class="glass-card" style="text-align: center;">
+            <div class="avatar-container" onclick="openModal('photoModal')">
+                <div class="avatar-circle">
+                    {% if user.profile_image %}
+                        <img src="{{ url_for('static', filename='profile_pics/' + user.profile_image) }}" class="avatar-img" id="main-avatar">
+                    {% else %}
+                        {{ user.username[0]|upper }}
+                    {% endif %}
+                </div>
+                <div class="upload-overlay">📷</div>
+            </div>
+
+            <h3>{{ user.username }}</h3>
+            <span style="background: var(--active-bg); color: var(--accent); padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">{{ user.role|upper }}</span>
+            
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-color);">
+            
+            <div style="text-align: left;">
+                <p style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 8px;">BIO</p>
+                <div id="bio-display-area">
+                    <p style="font-size: 0.85rem;">{{ user.bio if user.bio else 'No bio added yet.' }}</p>
+                    <button onclick="toggleBioEdit()" style="background:none; border:none; color:var(--accent); cursor:pointer; font-size:0.75rem; padding:0; font-weight:700;">[Edit Profile]</button>
+                </div>
+                <div id="bio-edit-area" style="display: none;">
+                    <form action="/update_bio" method="POST">
+                        <textarea name="new_bio" class="edit-input" style="min-height: 60px;">{{ user.bio }}</textarea>
+                        <button type="submit" class="btn-primary" style="font-size: 0.7rem; padding: 5px 12px; margin-top: 5px;">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-main">
+        <div class="stats-row">
+            <div class="stat-box" onclick="showInfo('tasks')">
+                <span class="stat-value">24</span>
+                <span class="stat-label">Tasks</span>
+            </div>
+            <div class="stat-box" onclick="showInfo('score')">
+                <span class="stat-value">85%</span>
+                <span class="stat-label">Avg Score</span>
+            </div>
+            <div class="stat-box" onclick="showInfo('streak')">
+                <span class="stat-value">12</span>
+                <span class="stat-label">Streak</span>
+            </div>
+        </div>
+
+        <div class="glass-card" style="flex-grow: 1;"> <h4 style="margin-bottom: 5px;">🏆 Achievement Hall</h4>
+            
+            <div class="achievement-section-title">✅ Earned Badges</div>
+            <div class="achievements-grid">
+                <div class="achievement-card">
+                    <span class="status-badge status-earned">Earned</span>
+                    <div class="achievement-header">
+                        <span class="achievement-icon">🔥</span>
+                        <div class="achievement-info"><h6>7 Day Streak</h6></div>
+                    </div>
+                    <p style="font-size: 0.75rem; margin: 0; opacity: 0.8;">You practiced for a full week!</p>
+                </div>
+
+                <div class="achievement-card">
+                    <span class="status-badge status-earned">Earned</span>
+                    <div class="achievement-header">
+                        <span class="achievement-icon">✍️</span>
+                        <div class="achievement-info"><h6>Essay Master</h6></div>
+                    </div>
+                    <p style="font-size: 0.75rem; margin: 0; opacity: 0.8;">Successfully completed 10 writing tasks.</p>
+                </div>
+            </div>
+
+            <div class="achievement-section-title">🔒 Not Earned Yet</div>
+            <div class="achievements-grid">
+                <div class="achievement-card locked">
+                    <span class="status-badge status-locked">Locked</span>
+                    <div class="achievement-header">
+                        <span class="achievement-icon">📚</span>
+                        <div class="achievement-info"><h6>Grammar Guru</h6></div>
+                    </div>
+                    <div class="how-to-earn"><strong>Task:</strong> Complete 5 Grammar Quizzes with a score over 90%.</div>
+                </div>
+
+                <div class="achievement-card locked">
+                    <span class="status-badge status-locked">Locked</span>
+                    <div class="achievement-header">
+                        <span class="achievement-icon">👑</span>
+                        <div class="achievement-info"><h6>Vocabulary King</h6></div>
+                    </div>
+                    <div class="how-to-earn"><strong>Task:</strong> Use 100 new words in your writing submissions.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card personal-info-card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="font-weight: 800;">Personal Information</h4>
+            <button onclick="openModal('infoEditModal')" class="btn-secondary" style="font-size: 0.75rem; padding: 5px 15px;">Edit Info</button>
+        </div>
+        
+        <div class="info-table">
+            <div class="info-row">
+                <div class="row-label"><span>🏛️</span> University</div>
+                <span class="row-value">{{ user.university if user.university else 'Middle East Technical University' }}</span>
+            </div>
+            <div class="info-row">
+                <div class="row-label"><span>🎓</span> Grade / Year</div>
+                <span class="row-value">{{ user.grade if user.grade else '3rd Year' }}</span>
+            </div>
+            <div class="info-row">
+                <div class="row-label"><span>👨‍🏫</span> Teacher</div>
+                <span class="row-value">{{ user.teacher if user.teacher else 'Dr. Alan Smith' }}</span>
+            </div>
+            <div class="info-row">
+                <div class="row-label"><span>📞</span> Phone Number</div>
+                <span class="row-value">{{ user.phone if user.phone else '+90 5XX XXX XX XX' }}</span>
+            </div>
+            <div class="info-row">
+                <div class="row-label"><span>🛡️</span> Education Status</div>
+                <span class="status-badge-ui">{{ user.education_status if user.education_status else 'Active Student' }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="photoModal" class="modal-overlay" onclick="closeModal('photoModal')">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <h3>Change Profile Photo</h3>
+        <form id="photo-form" enctype="multipart/form-data" style="margin-top: 20px;">
+            <input type="file" name="profile_image" accept="image/*" required style="margin-bottom: 20px; display: block; width: 100%;">
+            <button type="submit" class="btn-primary" style="width: 100%;">Upload Photo</button>
+        </form>
+    </div>
+</div>
+
+<div id="infoEditModal" class="modal-overlay" onclick="closeModal('infoEditModal')">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <h3>Edit Personal Information</h3>
+        <form action="/update_personal_info" method="POST" style="margin-top: 20px; text-align: left;">
+            <label style="font-size: 0.8rem; font-weight: 700;">University</label>
+            <input type="text" name="university" class="edit-input" value="{{ user.university }}">
+            <label style="font-size: 0.8rem; font-weight: 700; margin-top: 10px; display: block;">Grade / Year</label>
+            <input type="text" name="grade" class="edit-input" value="{{ user.grade }}">
+            <label style="font-size: 0.8rem; font-weight: 700; margin-top: 10px; display: block;">Teacher</label>
+            <input type="text" name="teacher" class="edit-input" value="{{ user.teacher }}">
+            <label style="font-size: 0.8rem; font-weight: 700; margin-top: 10px; display: block;">Phone Number</label>
+            <input type="text" name="phone" class="edit-input" value="{{ user.phone }}">
+            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 20px;">Save All Information</button>
+        </form>
+    </div>
+</div>
+
+<div id="infoModal" class="modal-overlay" onclick="closeModal('infoModal')">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <h3 id="modalTitle"></h3>
+        <p id="modalDescription" style="margin-top: 15px; color: var(--text-secondary);"></p>
+        <button class="btn-primary" onclick="closeModal('infoModal')" style="width: 100%; margin-top: 20px;">Got it!</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleBioEdit() {
+        const d = document.getElementById('bio-display-area');
+        const e = document.getElementById('bio-edit-area');
+        d.style.display = d.style.display === 'none' ? 'block' : 'none';
+        e.style.display = e.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    const infoData = {
+        'tasks': { title: 'Tasks Completed', desc: 'Total Speaking and Writing submissions tracked by AI.' },
+        'score': { title: 'Average Score', desc: 'Your current proficiency level based on your performance.' },
+        'streak': { title: 'Learning Streak', desc: 'Consecutive days of active learning on the platform.' }
+    };
+
+    function showInfo(type) {
+        document.getElementById('modalTitle').innerText = infoData[type].title;
+        document.getElementById('modalDescription').innerText = infoData[type].desc;
+        openModal('infoModal');
+    }
+
+    document.getElementById('photo-form').onsubmit = function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        fetch('/upload_profile_picture', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) { location.reload(); }
+            else { alert(data.message); }
+        });
+    };
+</script>
+{% endblock %}
