@@ -102,7 +102,7 @@
         padding-right: 4px;
     }
 
-    /* Scrollbar'ı gizle ama kaydırma özelliğini koru */
+    /* Hide scrollbar but keep scrolling */
     .bento-grid-container::-webkit-scrollbar {
         display: none;
     }
@@ -645,7 +645,52 @@
     </div>
 
     <!-- Bento Grid Container -->
-    {% if submissions and submissions|length > 0 %}
+
+    {# Quiz history view #}
+    {% if request.args.get('filter') == 'quiz' %}
+        {% if quizzes and quizzes|length > 0 %}
+        <div class="bento-grid-container">
+            <div class="bento-grid">
+                {% for q in quizzes %}
+                <div class="activity-tile" onclick="window.location.href='{{ url_for('quiz_review', quiz_id=q.id) }}'">
+                    <div class="tile-visual">
+                        <div class="tile-icon-large writing">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="tile-content">
+                        <h3 class="tile-title">
+                            {{ q.quiz_title }}
+                        </h3>
+                        <p class="tile-date">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            {{ q.date_taken.strftime('%b %d, %Y') if q.date_taken else '' }}
+                        </p>
+                        <p class="tile-date">
+                            Score: {{ q.score }}%
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-title">No quiz history yet.</div>
+            <div class="empty-state-text">Take a quiz to see your results here.</div>
+        </div>
+        {% endif %}
+
+    {# Default: submission history view (All / speaking / writing / handwritten) #}
+    {% elif submissions and submissions|length > 0 %}
     <div class="bento-grid-container">
         <div class="bento-grid">
             {% for sub in submissions %}

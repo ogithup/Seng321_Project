@@ -12,6 +12,7 @@ class User(db.Model, UserMixin):
     role = db.Column(db.String(20), default='Student') 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     submissions = db.relationship('Submission', backref='student', lazy=True)
+<<<<<<< HEAD
 
     # Optional profile fields (added for profile & settings pages)
     profile_image = db.Column(db.String(200), nullable=True)
@@ -26,6 +27,8 @@ class User(db.Model, UserMixin):
     ai_tone = db.Column(db.String(20), nullable=True)
     ai_speed = db.Column(db.Float, nullable=True)
     weekly_report = db.Column(db.Boolean, default=True)
+=======
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -38,6 +41,7 @@ class LearningActivity(db.Model):
     title = db.Column(db.String(100), nullable=False) 
     activity_type = db.Column(db.String(20), nullable=False) # WRITING, SPEAKING, QUIZ
     description = db.Column(db.Text, nullable=True)
+    quiz_category = db.Column(db.String(50), nullable=True)  # grammar, vocabulary, reading, etc.
     due_date = db.Column(db.DateTime, nullable=True) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     instructor = db.relationship('User', backref=db.backref('created_activities', lazy=True))
@@ -87,7 +91,21 @@ class Quiz(db.Model):
     score = db.Column(db.Float, nullable=False)
     date_taken = db.Column(db.DateTime, default=datetime.utcnow)
 
+<<<<<<< HEAD
 # --- 7. Question Entity ---
+=======
+# --- 7. QuizDetail Entity (store per-question results) ---
+class QuizDetail(db.Model):
+    __tablename__ = 'quiz_details'
+    id = db.Column(db.Integer, primary_key=True)
+    quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=False)
+    question_text = db.Column(db.Text, nullable=False)
+    user_answer = db.Column(db.String(5), nullable=True)
+    correct_answer = db.Column(db.String(5), nullable=True)
+    is_correct = db.Column(db.Boolean, default=False)
+
+# --- 8. Question Entity ---
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)
 class Question(db.Model):
     __tablename__ = 'questions'
     id = db.Column(db.Integer, primary_key=True)

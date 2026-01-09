@@ -1037,33 +1037,7 @@
         </a>
     </div>
 
-    <div class="stat-card" onclick="window.location.href='/instructor/pending'">
-        <div class="stat-card-header">
-            <div class="stat-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-            </div>
-        </div>
-        <div class="stat-card-content">
-        <div class="label">Pending AI</div>
-            <div class="value">
-                {{ pending_count | default(0) }}
-                <div class="sparkline-container">
-                    <canvas class="sparkline-chart" id="sparkline-pending"></canvas>
-                    <span class="sparkline-badge" id="sparkline-badge-pending" style="display: none;">Steady</span>
-                </div>
-            </div>
-        </div>
-        <a href="/instructor/pending" class="stat-card-link" onclick="event.stopPropagation();">
-            View Details
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
-            </svg>
-        </a>
-    </div>
+    <!-- Pending AI card removed because AI grades immediately -->
 
     <div class="stat-card" onclick="window.location.href='/instructor/analytics'">
         <div class="stat-card-header">
@@ -1164,28 +1138,28 @@
                     </svg>
                 </div>
                 <!-- Title -->
-                <h5 class="empty-state-title">Sınıfını Keşfetmeye Hazır mısın?</h5>
+                <h5 class="empty-state-title">Ready to explore your class?</h5>
                 <!-- Roadmap Steps - Horizontal -->
                 <div class="roadmap-steps">
                     <div class="roadmap-step">
                         <div class="roadmap-step-number">1</div>
                         <div class="roadmap-step-content">
-                            <div class="roadmap-step-title">Ödevi Oluştur</div>
-                            <div class="roadmap-step-description">Hazırlığını tamamla</div>
+                            <div class="roadmap-step-title">Create Assignment</div>
+                            <div class="roadmap-step-description">Finish your setup</div>
                         </div>
                     </div>
                     <div class="roadmap-step">
                         <div class="roadmap-step-number">2</div>
                         <div class="roadmap-step-content">
-                            <div class="roadmap-step-title">Öğrencileri Bekle</div>
-                            <div class="roadmap-step-description">Projelerini yüklemelerini sağla</div>
+                            <div class="roadmap-step-title">Wait for Students</div>
+                            <div class="roadmap-step-description">Have them submit their work</div>
                         </div>
                     </div>
                     <div class="roadmap-step">
                         <div class="roadmap-step-number">3</div>
                         <div class="roadmap-step-content">
-                            <div class="roadmap-step-title">Analizi Gör</div>
-                            <div class="roadmap-step-description">Performans karşılaştırmalarını izle</div>
+                            <div class="roadmap-step-title">See Analysis</div>
+                            <div class="roadmap-step-description">Watch performance comparisons</div>
                         </div>
                     </div>
                 </div>
@@ -1204,21 +1178,21 @@
                         <div class="grade-legend-dot high"></div>
                         <div class="grade-legend-label">
                             <span>High (75+)</span>
-                            <span class="grade-legend-percentage" id="highPercentage">- %0</span>
+                            <span class="grade-legend-percentage" id="highPercentage">- 0%</span>
                         </div>
                     </div>
                     <div class="grade-legend-item">
                         <div class="grade-legend-dot mid"></div>
                         <div class="grade-legend-label">
                             <span>Mid (50-74)</span>
-                            <span class="grade-legend-percentage" id="midPercentage">- %0</span>
+                            <span class="grade-legend-percentage" id="midPercentage">- 0%</span>
                         </div>
                     </div>
                     <div class="grade-legend-item">
                         <div class="grade-legend-dot low"></div>
                         <div class="grade-legend-label">
                             <span>Low (&lt;50)</span>
-                            <span class="grade-legend-percentage" id="lowPercentage">- %0</span>
+                            <span class="grade-legend-percentage" id="lowPercentage">- 0%</span>
                         </div>
                     </div>
                 </div>
@@ -1263,7 +1237,8 @@
 
     // Only initialize charts if there are submissions
     {% set total_submissions = submissions | length %}
-    {% if total_submissions > 0 %}
+    {% set total_quizzes = quizzes | length if quizzes is defined else 0 %}
+    {% if (total_submissions + total_quizzes) > 0 %}
     // Grouped Bar Chart - Student Performance Comparison (Dynamic from Database)
     const groupedBarCtx = document.getElementById('groupedBarChart');
     if (groupedBarCtx) {
@@ -1292,23 +1267,17 @@
             {% endfor %}
         ];
         
-        // Get quiz data
-        {% set quiz_data = [] %}
-        {% for sub in submissions %}
-            {% if sub.student.quizzes %}
-                {% for quiz in sub.student.quizzes %}
-                    {% if quiz_data.append({'studentId': sub.student_id, 'score': quiz.score}) %}{% endif %}
-                {% endfor %}
-            {% endif %}
-        {% endfor %}
-        
+        // Get quiz data (from all quizzes, not only submissions)
         const quizDataRaw = [
-            {% for quiz in quiz_data %}
+            {% if quizzes is defined %}
+            {% for quiz in quizzes %}
             {
-                studentId: {{ quiz.studentId }},
+                studentId: {{ quiz.user_id }},
+                studentName: '{{ quiz.user.username if quiz.user else "Student" }}',
                 score: {{ quiz.score }}
             }{% if not loop.last %},{% endif %}
             {% endfor %}
+            {% endif %}
         ];
         
         // Process data: Group by student and calculate averages
@@ -1333,11 +1302,17 @@
             }
         });
         
-        // Process quizzes
+        // Process quizzes (add students even if they have no submissions)
         quizDataRaw.forEach(quiz => {
-            if (studentMap[quiz.studentId]) {
-                studentMap[quiz.studentId].quiz = Math.max(studentMap[quiz.studentId].quiz, quiz.score);
+            if (!studentMap[quiz.studentId]) {
+                studentMap[quiz.studentId] = {
+                    name: quiz.studentName || ('Student #' + quiz.studentId),
+                    speaking: [],
+                    text: [],
+                    quiz: 0
+                };
             }
+            studentMap[quiz.studentId].quiz = Math.max(studentMap[quiz.studentId].quiz, quiz.score);
         });
         
         // Convert to arrays and calculate averages
@@ -1381,7 +1356,7 @@
                     labels: studentNames,
                     datasets: [
                         {
-                            label: 'Speaking Puanı',
+                            label: 'Speaking Score',
                             data: speakingData,
                             backgroundColor: '#005596',  // Blue
                             borderColor: '#005596',
@@ -1389,7 +1364,7 @@
                             borderRadius: 4
                         },
                         {
-                            label: 'Quiz Puanı',
+                            label: 'Quiz Score',
                             data: quizData,
                             backgroundColor: '#ce0000',  // Red
                             borderColor: '#ce0000',
@@ -1397,7 +1372,7 @@
                             borderRadius: 4
                         },
                         {
-                            label: 'Text Puanı',
+                            label: 'Writing Score',
                             data: textData,
                             backgroundColor: '#ff9900',  // Orange/Yellow
                             borderColor: '#ff9900',

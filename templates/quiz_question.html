@@ -40,6 +40,7 @@
                 {% endif %}
             </div>
             
+<<<<<<< HEAD
             <!-- Instant Feedback Area -->
             <div id="instantFeedback" class="instant-feedback" style="display: none;">
                 <div class="feedback-message" id="feedbackMessage"></div>
@@ -47,6 +48,9 @@
             
             <div class="quiz-actions">
                 <button type="button" id="checkAnswerBtn" class="btn-secondary" style="display: none;">Check Answer</button>
+=======
+            <div class="quiz-actions">
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)
                 {% if is_last %}
                 <button type="submit" class="btn-primary" id="submitBtn">Finish Quiz</button>
                 {% else %}
@@ -131,6 +135,7 @@
     background: var(--primary-hover);
 }
 
+<<<<<<< HEAD
 .btn-secondary {
     padding: 12px 30px;
     font-size: 1rem;
@@ -246,5 +251,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+=======
+</style>
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)
 {% endblock %}
 

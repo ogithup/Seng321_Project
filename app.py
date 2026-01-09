@@ -10,7 +10,11 @@ from functools import wraps
 # Project internal imports
 from config import Config
 from models.database import db
+<<<<<<< HEAD
 from models.entities import User, Submission, Grade, LearningActivity, LearningGoal, Quiz, Question
+=======
+from models.entities import User, Submission, Grade, LearningActivity, LearningGoal, Quiz, QuizDetail, Question
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)
 from services.ai_service import AIService
 from services.ocr_service import OCRService
 from services.grading_service import GradingService
@@ -423,18 +427,66 @@ def create_app():
     def view_assignments():
         activities = LearningActivity.query.order_by(LearningActivity.due_date.asc()).all()
         now = datetime.utcnow()
-        
-        # Calculate status counts
+
+        # Student submissions to mark completed assignments (including quiz submissions)
+        user_subs = Submission.query.filter_by(student_id=current_user.id).all()
+        completed_ids = set(s.activity_id for s in user_subs if s.activity_id)
+
         all_count = len(activities)
-        pending_count = len([a for a in activities if a.due_date and a.due_date >= now])
-        completed_count = len([a for a in activities if a.due_date and a.due_date < now])
-        
+        completed_count = len([a for a in activities if a.id in completed_ids])
+        pending_count = all_count - completed_count
+
         return render_template('assignments.html', 
                                activities=activities,
                                all_count=all_count,
                                pending_count=pending_count,
                                completed_count=completed_count,
-                               now=now)
+                               now=now,
+                               completed_ids=completed_ids)
+
+    @app.route('/instructor/assignments')
+    @role_required('Instructor')
+    def instructor_assignments():
+        activities = LearningActivity.query.order_by(LearningActivity.due_date.asc()).all()
+        now = datetime.utcnow()
+        return render_template('instructor_assignments.html', activities=activities, now=now)
+
+    @app.route('/instructor/assignments/create', methods=['GET', 'POST'])
+    @role_required('Instructor')
+    def instructor_create_assignment():
+        if request.method == 'POST':
+            title = request.form.get('title')
+            activity_type = request.form.get('activity_type')
+            due_date_str = request.form.get('due_date')
+            description = request.form.get('description')
+            quiz_category = request.form.get('quiz_category') if activity_type == 'QUIZ' else None
+
+            if not title or not activity_type:
+                flash('Title and type are required.', 'danger')
+                return redirect(url_for('instructor_create_assignment'))
+
+            due_date = None
+            if due_date_str:
+                try:
+                    due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+                except ValueError:
+                    flash('Invalid date format. Use YYYY-MM-DD.', 'danger')
+                    return redirect(url_for('instructor_create_assignment'))
+
+            new_activity = LearningActivity(
+                instructor_id=current_user.id,
+                title=title,
+                activity_type=activity_type,
+                description=description,
+                quiz_category=quiz_category,
+                due_date=due_date
+            )
+            db.session.add(new_activity)
+            db.session.commit()
+            flash('Assignment created.', 'success')
+            return redirect(url_for('instructor_assignments'))
+
+        return render_template('instructor_assignment_create.html')
 
     @app.route('/instructor/assignments')
     @role_required('Instructor')
@@ -526,12 +578,30 @@ def create_app():
     @app.route('/quiz/start', methods=['GET', 'POST'])
     @login_required
     def start_quiz():
+<<<<<<< HEAD
         if request.method == 'POST':
             # Get questions using QuizService
             questions = QuizService.get_questions(limit=5)
             
             if not questions:
                 flash("No questions available. Please contact your instructor.", "danger")
+=======
+        activity_id = request.args.get('activity_id', type=int)
+        category = None
+        
+        # If started from assignment, get category from activity
+        if activity_id:
+            activity = LearningActivity.query.get(activity_id)
+            if activity and activity.activity_type == 'QUIZ':
+                category = activity.quiz_category
+        
+        if request.method == 'POST' or activity_id:
+            # Get questions using QuizService with optional category
+            questions = QuizService.get_questions(limit=5, category=category)
+            
+            if not questions:
+                flash("No questions available for this category.", "danger")
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)
                 return redirect(url_for('quizzes'))
             
             # Store questions in session for quiz flow
@@ -540,6 +610,11 @@ def create_app():
             session['quiz_answers'] = {}
             session['quiz_current'] = 0
             session['quiz_started'] = True
+<<<<<<< HEAD
+=======
+            if activity_id:
+                session['quiz_activity_id'] = activity_id
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)
             
             return redirect(url_for('quiz_question'))
         
@@ -556,6 +631,7 @@ def create_app():
         
         question_ids = session.get('quiz_questions', [])
         current_idx = session.get('quiz_current', 0)
+<<<<<<< HEAD
         answers = session.get('quiz_answers', {})
         
         if request.method == 'POST':
@@ -573,12 +649,23 @@ def create_app():
                     })
             
             # Regular form submission - save answer and move to next
+=======
+        # answers stored with string keys in session
+        answers = session.get('quiz_answers', {})
+        
+        if request.method == 'POST':
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)
             question_id = request.form.get('question_id', type=int)
             answer = request.form.get('answer', '')
             
             if question_id:
+<<<<<<< HEAD
                 answers[question_id] = answer
                 session['quiz_answers'] = answers
+=======
+                answers[str(question_id)] = answer
+                session['quiz_answers'] = dict(answers)
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)
             
             # Move to next question
             current_idx += 1
@@ -617,17 +704,109 @@ def create_app():
         
         # Calculate score using QuizService
         correct, total, score = QuizService.calculate_final_score(question_ids, answers)
+<<<<<<< HEAD
         
         # Save quiz result using QuizService
         QuizService.save_result(current_user.id, "Grammar Quiz", score)
+=======
+
+        # Build per-question details for result page
+        details = []
+        for q_id in question_ids:
+            question = Question.query.get(q_id)
+            user_answer = answers.get(str(q_id))
+            correct_answer = question.correct_answer if question else None
+            is_correct = user_answer and question and user_answer.upper() == correct_answer.upper()
+            details.append({
+                'question_text': question.question_text if question else '',
+                'user_answer': user_answer,
+                'correct_answer': correct_answer,
+                'is_correct': is_correct,
+            })
+        
+        # Save quiz result and detailed answers using QuizService
+        quiz_title = "Grammar Quiz"
+        
+        # Check if this was an assignment submission
+        activity_id = session.get('quiz_activity_id')
+        if activity_id:
+            activity = LearningActivity.query.get(activity_id)
+            if activity:
+                quiz_title = activity.title
+                
+                # Create Submission
+                new_sub = Submission(
+                    student_id=current_user.id,
+                    activity_id=activity.id,
+                    submission_type='QUIZ',
+                    text_content=f"Quiz completed: {activity.title} (Score: {score}%)"
+                )
+                db.session.add(new_sub)
+                db.session.flush() # get id
+                
+                # Create Grade
+                new_grade = Grade(
+                    submission_id=new_sub.id,
+                    score=score,
+                    general_feedback=f"Auto-graded quiz. Correct: {correct}/{total}"
+                )
+                db.session.add(new_grade)
+                db.session.commit() # Commit submission and grade
+                flash("Assignment marked as completed!", "success")
+        
+        QuizService.save_result(current_user.id, quiz_title, score, details=details)
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)
         
         # Clear session
         session.pop('quiz_started', None)
         session.pop('quiz_questions', None)
         session.pop('quiz_answers', None)
         session.pop('quiz_current', None)
+<<<<<<< HEAD
         
         return render_template('quiz_result.html', score=score, correct=correct, total=total)
+=======
+        session.pop('quiz_activity_id', None)
+        
+        return render_template('quiz_result.html', score=score, correct=correct, total=total, details=details, is_review=False)
+
+    @app.route('/quiz/review/<int:quiz_id>')
+    @login_required
+    def quiz_review(quiz_id):
+        quiz = Quiz.query.get_or_404(quiz_id)
+
+        # Permission: student can only see own quiz, instructor can see all
+        if current_user.role != 'Instructor' and quiz.user_id != current_user.id:
+            flash("You don't have permission to view this quiz.", "danger")
+            return redirect(url_for('dashboard'))
+
+        details_rows = QuizDetail.query.filter_by(quiz_id=quiz.id).all()
+
+        # Fallback: if no stored details, just show simple result
+        details = []
+        correct = 0
+        total = 0
+        if details_rows:
+            for d in details_rows:
+                details.append({
+                    'question_text': d.question_text,
+                    'user_answer': d.user_answer,
+                    'correct_answer': d.correct_answer,
+                    'is_correct': d.is_correct,
+                })
+                total += 1
+                if d.is_correct:
+                    correct += 1
+
+        return render_template(
+            'quiz_result.html',
+            score=quiz.score,
+            correct=correct,
+            total=total,
+            details=details,
+            is_review=True
+        )
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)
 
     @app.route('/goals', methods=['GET', 'POST'])
     @login_required
@@ -708,10 +887,41 @@ def create_app():
     def profile():
         return render_template('profile.html')
     
+<<<<<<< HEAD
     @app.route('/settings', methods=['GET'])
     @login_required
     def settings():
         # All updates are handled by dedicated endpoints below; this route only renders the page.
+=======
+    @app.route('/settings', methods=['GET', 'POST'])
+    @login_required
+    def settings():
+        if request.method == 'POST':
+            username = request.form.get('username')
+            email = request.form.get('email')
+            password = request.form.get('password')
+            
+            if username:
+                current_user.username = username
+            if email:
+                existing = User.query.filter_by(email=email).first()
+                if existing and existing.id != current_user.id:
+                    flash("Email already exists!", "danger")
+                    return redirect(url_for('settings'))
+                current_user.email = email
+            if password:
+                current_user.password = generate_password_hash(password, method='pbkdf2:sha256')
+            
+            try:
+                db.session.commit()
+                flash("Settings updated successfully!", "success")
+            except:
+                db.session.rollback()
+                flash("Error updating settings.", "danger")
+            
+            return redirect(url_for('settings'))
+        
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)
         return render_template('settings.html')
 
     # --- PROFILE & SETTINGS AUXILIARY ROUTES ---
@@ -844,6 +1054,7 @@ def create_app():
         from collections import defaultdict
         
         all_subs = Submission.query.all()
+        all_quizzes = Quiz.query.all()
         graded_subs = [s for s in all_subs if s.grade]
         class_avg = round(sum(s.grade.score for s in graded_subs) / len(graded_subs), 1) if graded_subs else 0.0
         active_count = len(set(s.student_id for s in all_subs))
@@ -879,6 +1090,7 @@ def create_app():
 
         return render_template('instructor_dashboard.html', 
                                submissions=all_subs, 
+                               quizzes=all_quizzes,
                                class_avg=class_avg, 
                                active_count=active_count,
                                pending_count=pending_count,
@@ -1149,21 +1361,31 @@ def create_app():
     @login_required
     def history():
         filter_type = request.args.get('filter')
-        query = Submission.query.filter_by(student_id=current_user.id)
+
+        # For quiz-only history, use Quiz table
+        if filter_type == 'quiz':
+            quizzes = QuizRepository.get_quizzes(user_id=current_user.id)
+            submissions = []
+        else:
+            query = Submission.query.filter_by(student_id=current_user.id)
+            
+            if filter_type:
+                if filter_type == 'speaking':
+                    query = query.filter_by(submission_type='SPEAKING')
+                elif filter_type == 'writing':
+                    query = query.filter_by(submission_type='WRITING')
+                elif filter_type == 'handwritten':
+                    query = query.filter_by(submission_type='HANDWRITTEN')
+            
+            submissions = query.order_by(Submission.created_at.desc()).all()
+
+            # In "All" view also include quizzes; for filtered speaking/writing/handwritten, hide them
+            if not filter_type or filter_type == 'all':
+                quizzes = QuizRepository.get_quizzes(user_id=current_user.id)
+            else:
+                quizzes = []
         
-        # Apply filter if specified
-        if filter_type:
-            if filter_type == 'speaking':
-                query = query.filter_by(submission_type='SPEAKING')
-            elif filter_type == 'writing':
-                query = query.filter_by(submission_type='WRITING')
-            elif filter_type == 'handwritten':
-                query = query.filter_by(submission_type='HANDWRITTEN')
-            elif filter_type == 'quiz':
-                query = query.filter_by(submission_type='QUIZ')
-        
-        submissions = query.order_by(Submission.created_at.desc()).all()
-        return render_template('history.html', submissions=submissions)
+        return render_template('history.html', submissions=submissions, quizzes=quizzes)
 
     @app.route('/feedback/<int:submission_id>')
     @login_required

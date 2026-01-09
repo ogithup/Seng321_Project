@@ -363,9 +363,10 @@
 </div>
 
 <!-- Task Cards Grid -->
-<div class="assignments-grid" id="assignmentsGrid">
-    {% for activity in activities %}
-    <div class="assignment-card" data-status="{% if activity.due_date and activity.due_date >= now %}pending{% else %}completed{% endif %}">
+    <div class="assignments-grid" id="assignmentsGrid">
+        {% for activity in activities %}
+        {% set is_completed = activity.id in completed_ids %}
+        <div class="assignment-card" data-status="{% if is_completed %}completed{% else %}pending{% endif %}">
         <div class="assignment-header">
             <div class="assignment-icon">
                 {% if activity.activity_type == 'WRITING' %}
@@ -405,18 +406,30 @@
                 <span>Due: {{ activity.due_date.strftime('%b %d, %Y') if activity.due_date else 'No Limit' }}</span>
             </div>
             <div class="assignment-progress">
-                <div class="assignment-progress-fill" style="width: 0%;"></div>
+                <div class="assignment-progress-fill" style="width: {% if is_completed %}100{% else %}0{% endif %}%;"></div>
             </div>
         </div>
 
         <div class="assignment-actions">
-            <a href="/submit/writing?activity_id={{ activity.id }}" class="btn-start-task">
-                <span>Start Task</span>
+            {% if activity.activity_type == 'QUIZ' %}
+            <!-- Quiz assignment: go to quiz flow -->
+            <a href="{{ url_for('start_quiz', activity_id=activity.id) }}" class="btn-start-task {% if is_completed %}disabled{% endif %}" {% if is_completed %}onclick="return false;"{% endif %}>
+                <span>{% if is_completed %}Completed{% else %}Start Quiz{% endif %}</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                     <polyline points="12 5 19 12 12 19"></polyline>
                 </svg>
             </a>
+            {% else %}
+            <!-- Writing / Speaking assignments -->
+            <a href="/submit/writing?activity_id={{ activity.id }}" class="btn-start-task {% if is_completed %}disabled{% endif %}" {% if is_completed %}onclick="return false;"{% endif %}>
+                <span>{% if is_completed %}Completed{% else %}Start Task{% endif %}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </a>
+            {% endif %}
         </div>
     </div>
     {% else %}

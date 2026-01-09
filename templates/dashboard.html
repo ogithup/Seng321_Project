@@ -5,10 +5,11 @@
 {% block extra_css %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-    /* Fixed Layout - Single Screen */
+    /* Allow page to scroll normally */
     .content-wrapper {
-        height: 100vh;
-        overflow: hidden;
+        min-height: 100vh;
+        overflow-x: hidden;
+        overflow-y: auto;
         display: flex;
         flex-direction: column;
         padding: 48px 32px 24px 32px;  /* Top padding 48px to align with sidebar-top (MAIN line level) */
@@ -19,9 +20,7 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
-        min-height: 0;
-        padding-bottom: 30px;  /* Safe bottom spacing to prevent cutoff */
+        padding-bottom: 30px;
     }
 
     /* Welcome Banner - Compact like Instructor, Aligned with Sidebar MAIN */

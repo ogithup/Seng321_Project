@@ -1,21 +1,23 @@
-# Python önbelleði
+# Python cache
 __pycache__/
 *.py[cod]
 
-# Sanal ortam
+# Virtual environment
 venv/
 
-# Veritabaný (Görselde 'site' olarak görünüyor)
+# Database (shown as 'site' in some UIs)
 site
 site.db
 
-# Ortam deðiþkenleri (Hassas bilgiler)
+# Environment variables (sensitive information)
 .env
 
-# IDE Dosyalarý (Visual Studio ve VS Code)
+# IDE files (Visual Studio and VS Code)
 .vs/
 .vscode/
 
-# Yüklenen dosyalar
+# Uploaded files
 static/uploads/*
 !static/uploads/.gitkeep
+# But allow .env.example to be tracked
+!.env.example

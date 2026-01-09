@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% extends "base.html" %}
 
 {% block title %}Quiz Result - AAFS AI{% endblock %}
@@ -124,3 +125,151 @@
 
 
 
+=======
+{% extends "base.html" %}
+
+{% block title %}{{ 'Quiz Review' if is_review else 'Quiz Result - AAFS AI' }}{% endblock %}
+
+{% block content %}
+<div class="content-container">
+    <div class="quiz-result-card glass-card">
+        <div class="result-header">
+            <h2>{{ 'Quiz Review' if is_review else 'Quiz Completed!' }}</h2>
+        </div>
+        
+        <div class="score-display">
+            <div class="score-circle">
+                <span class="score-value">{{ score }}</span>
+                <span class="score-label">Score</span>
+            </div>
+        </div>
+        
+        <div class="result-details">
+            <p><strong>Correct Answers:</strong> {{ correct }} out of {{ total }}</p>
+            <p><strong>Percentage:</strong> {{ score }}%</p>
+        </div>
+        
+        {% if details %}
+        <div class="result-details">
+            <h3>Question Summary</h3>
+            <ul style="text-align: left; margin-top: 10px;">
+                {% for item in details %}
+                <li style="margin-bottom: 8px;">
+                    <strong>Q{{ loop.index }}:</strong> {{ item.question_text }}<br>
+                    Your answer: {{ item.user_answer or '—' }} |
+                    Correct: {{ item.correct_answer }} |
+                    {% if item.is_correct %}
+                        <span style="color: green; font-weight: 600;">Correct</span>
+                    {% else %}
+                        <span style="color: red; font-weight: 600;">Wrong</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <div class="result-actions">
+            <a href="{{ url_for('quizzes') }}" class="btn-primary">Back to Quizzes</a>
+            <a href="{{ url_for('dashboard') }}" class="btn-secondary">Go to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.quiz-result-card {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 40px;
+    text-align: center;
+}
+
+.result-header h2 {
+    font-size: 2rem;
+    margin-bottom: 30px;
+    color: var(--text-main);
+}
+
+.score-display {
+    margin: 30px 0;
+}
+
+.score-circle {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    color: white;
+    margin: 0 auto;
+}
+
+.score-value {
+    font-size: 3rem;
+    font-weight: bold;
+}
+
+.score-label {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+.result-details {
+    margin: 30px 0;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+}
+
+.result-details p {
+    margin: 10px 0;
+    font-size: 1.1rem;
+    color: var(--text-main);
+}
+
+.result-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 12px 30px;
+    font-size: 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.2s;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-main);
+    border: 2px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--hover-bg);
+}
+</style>
+{% endblock %}
+
+
+
+
+
+
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)

@@ -665,8 +665,8 @@
                     <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
             </div>
-            <h2 class="upload-title">Belgenizi buraya sürükleyin</h2>
-            <p class="upload-subtitle">veya dosya seçmek için tıklayın</p>
+            <h2 class="upload-title">Drag your document here</h2>
+            <p class="upload-subtitle">or click to choose a file</p>
             <p class="upload-formats">Desteklenen formatlar: PDF, JPG, PNG</p>
             <form action="/submit/handwritten" method="POST" enctype="multipart/form-data" id="ocrForm">
                 <input type="file" id="imageInput" name="file" accept="image/*,.pdf" class="file-input" required>
@@ -682,7 +682,7 @@
                     <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
             </div>
-            <p class="upload-text">Farklı dosya seçmek için tıklayın veya sürükleyin</p>
+            <p class="upload-text">Click or drag to choose a different file</p>
         </div>
 
         <!-- Loaded State: File Info Card -->
@@ -703,7 +703,7 @@
                     </div>
                 </div>
                 <div class="file-actions">
-                    <button class="btn-icon" onclick="clearFile()" title="Dosyayı Kaldır">
+                    <button class="btn-icon" onclick="clearFile()" title="Remove file">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
                             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -734,14 +734,14 @@
     <div class="results-section">
         <div class="results-card">
             <div class="results-header">
-                <h3 class="results-title">Analiz Sonuçları</h3>
+                <h3 class="results-title">Analysis Results</h3>
                 <div class="results-actions">
                     <button class="btn-secondary" onclick="toggleJsonView()" id="jsonToggleBtn" style="display: none;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="16 18 22 12 16 6"></polyline>
                             <polyline points="8 6 2 12 8 18"></polyline>
                         </svg>
-                        <span id="jsonToggleText">Ham JSON'ı Göster</span>
+                        <span id="jsonToggleText">Show raw JSON</span>
                     </button>
                     <button class="btn-secondary" onclick="copyToClipboard()" id="copyBtn" style="display: none;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -763,7 +763,7 @@
                         <line x1="16" y1="17" x2="8" y2="17"></line>
                     </svg>
                 </div>
-                <p class="results-empty-text">Sonuçlar burada görünecek</p>
+                <p class="results-empty-text">Results will appear here</p>
             </div>
 
             <!-- Results Content -->
@@ -803,7 +803,7 @@
         {% if image_path %}
         // Show file info and preview if image exists
         const fileName = '{{ image_path.split("/")[-1] }}';
-        const fileSize = 'Yüklenmiş';
+        const fileSize = 'Uploaded';
         
         // Switch to compact upload zone
         const uploadZone = document.getElementById('uploadZone');
@@ -862,13 +862,13 @@
         // Validate file type
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
         if (!validTypes.includes(file.type)) {
-            alert('Lütfen geçerli bir dosya formatı seçin (PDF, JPG, PNG)');
+            alert('Please choose a valid file format (PDF, JPG, PNG)');
             return;
         }
 
         // Validate file size (max 10MB)
         if (file.size > 10 * 1024 * 1024) {
-            alert('Dosya boyutu 10MB\'dan küçük olmalıdır');
+            alert('File size must be under 10MB');
             return;
         }
 
@@ -989,11 +989,11 @@
             jsonContent.textContent = JSON.stringify(jsonData, null, 2);
             extractedTextEl.style.display = 'none';
             jsonViewer.classList.add('active');
-            toggleText.textContent = 'Metin Görünümüne Dön';
+            toggleText.textContent = 'Back to text view';
         } else {
             extractedTextEl.style.display = 'block';
             jsonViewer.classList.remove('active');
-            toggleText.textContent = 'Ham JSON\'ı Göster';
+            toggleText.textContent = 'Show raw JSON';
         }
     }
 
@@ -1002,7 +1002,7 @@
         navigator.clipboard.writeText(text).then(() => {
             const btn = document.getElementById('copyBtn');
             const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Kopyalandı!';
+            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!';
             btn.style.color = 'var(--accent)';
             setTimeout(() => {
                 btn.innerHTML = originalHTML;

@@ -408,12 +408,22 @@
         </div>
     </div>
 
+<<<<<<< HEAD
     <!-- Content Area - Flex 1, Centered -->
     <!-- Start Quiz Button -->
     <div class="start-quiz-section" style="margin: 20px 0; text-align: center;">
         <a href="{{ url_for('start_quiz') }}" class="btn-start-quiz-large" style="display: inline-block; padding: 15px 30px; background: var(--primary-color); color: white; text-decoration: none; border-radius: 8px; font-size: 1.1rem;">
             Start New Quiz
         </a>
+=======
+    <!-- Start New Quiz -->
+    <div class="start-quiz-section" style="margin: 20px 0; text-align: center;">
+        <form action="{{ url_for('start_quiz') }}" method="POST">
+            <button type="submit" class="btn-start-quiz-large" style="padding: 15px 30px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer;">
+                Start New Quiz
+            </button>
+        </form>
+>>>>>>> 4d3348b (feat: AI preferences, and instant feedback- Implemented automatic database migrations for newly added user columns.- Added functional routes for profile customization and secure avatar uploads.- Enhanced quiz experience with AJAX-based instant answer validation.- Simplified quiz data persistence by removing the QuizDetail model.)
     </div>
 
     {% if quizzes and quizzes|length > 0 %}
@@ -421,7 +431,7 @@
         <div class="quizzes-grid-container">
         <div class="quizzes-grid">
             {% for quiz in quizzes %}
-            <div class="quiz-card" onclick="window.location.href='/quiz/{{ quiz.id }}'">
+            <div class="quiz-card">
                 <div class="quiz-header">
                     <h3 class="quiz-title">{{ quiz.quiz_title or quiz.title }}</h3>
                     <span class="quiz-type-badge">
@@ -443,17 +453,28 @@
                             <circle cx="12" cy="12" r="10"></circle>
                             <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
-                        <span>{{ quiz.estimated_time or 5 }} min</span>
+                        <span>Last score: {{ quiz.score }}%</span>
+                    </div>
+                    <div class="quiz-meta-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        <span>{{ quiz.date_taken.strftime('%b %d, %Y') if quiz.date_taken else '' }}</span>
                     </div>
                 </div>
 
-                <a href="/quiz/{{ quiz.id }}" class="btn-start-quiz" onclick="event.stopPropagation();">
-                    Start Now
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                        <polyline points="12 5 19 12 12 19"></polyline>
-                    </svg>
-                </a>
+                <form action="{{ url_for('start_quiz') }}" method="POST" style="margin: 0;" onclick="event.stopPropagation();">
+                    <button type="submit" class="btn-start-quiz">
+                        Take Again
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </button>
+                </form>
             </div>
             {% endfor %}
         </div>
